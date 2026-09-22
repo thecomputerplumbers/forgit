@@ -23,7 +23,13 @@ function containerFetch(): typeof fetch {
     const url =
       typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
     const path = new URL(url).pathname + new URL(url).search;
-    return stub.fetch(new Request(`http://container${path}`, init));
+    const body = init?.body;
+    const forwarded = {
+      ...init,
+      body,
+      duplex: body ? "half" : undefined,
+    } as unknown as RequestInit;
+    return stub.fetch(new Request(`http://container${path}`, forwarded));
   };
 }
 

@@ -179,14 +179,22 @@ async function proxyGit(
   return outbound;
 }
 
+function relay(url: string, request: Request): Request {
+  const body = request.body;
+  return new Request(url, {
+    method: request.method,
+    headers: request.headers,
+    body,
+    duplex: body ? "half" : undefined,
+  } as RequestInit);
+}
+
 async function upstream(env: Cloudflare.Env, request: Request): Promise<Response> {
-  if (env.WALGIT_URL) {
-    const url = new URL(request.url);
-    return fetch(new Request(`${env.WALGIT_URL}${url.pathname}${url.search}`, request));
-  }
-  const stub = env.GIT_CONTAINER.get(env.GIT_CONTAINER.idFromName("forgit"));
   const url = new URL(request.url);
-  return stub.fetch(new Request(`http://container${url.pathname}${url.search}`, request));
+  const path = `${url.pathname}${url.search}`;
+  if (env.WALGIT_URL) return fetch(relay(`${env.WALGIT_URL}${path}`, request));
+  const stub = env.GIT_CONTAINER.get(env.GIT_CONTAINER.idFromName("forgit"));
+  return stub.fetch(relay(`http://container${path}`, request));
 }
 
 async function ready(env: Cloudflare.Env, requestId: string) {
