@@ -602,7 +602,6 @@ export async function handleGithubGraphql(request: Request, ctx: Ctx): Promise<R
         data: {
           viewer: {
             login: row?.login ?? ctx.actor.login,
-            id: row?.id ?? ctx.actor.userId,
           },
         },
       });
