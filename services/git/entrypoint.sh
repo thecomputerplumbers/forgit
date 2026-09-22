@@ -29,7 +29,9 @@ PY
 nginx -c /tmp/nginx.conf -g "daemon off;" &
 nginx_pid=$!
 trap 'kill "$walgit_pid" "$merge_pid" "$nginx_pid" 2>/dev/null || true' TERM INT
-while kill -0 "$walgit_pid" 2>/dev/null && kill -0 "$nginx_pid" 2>/dev/null; do
+# tini is PID 1. A dead merge helper must exit this script so the platform
+# restarts the container; nginx alone would keep serving Git while merge 502s.
+while kill -0 "$walgit_pid" 2>/dev/null && kill -0 "$merge_pid" 2>/dev/null && kill -0 "$nginx_pid" 2>/dev/null; do
   sleep 2
 done
 exit 1
