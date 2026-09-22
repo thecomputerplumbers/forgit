@@ -161,6 +161,7 @@ describe("github rest and graphql", () => {
       };
     };
     assert.equal(infoBody.data.repository.viewerPermission, "ADMIN");
+    assert.equal((infoBody.data.repository as { visibility?: string }).visibility, "PRIVATE");
     assert.equal(infoBody.data.repository.squashMergeAllowed, true);
     assert.equal(infoBody.data.repository.id, repoNodeId("acme", "other"));
   });

@@ -733,6 +733,8 @@ function graphqlRepo(ctx: Ctx, owner: string, repo: Repository, permission: stri
     url: `${ctx.origin}/${owner}/${repo.name}`,
     hasIssuesEnabled: false,
     hasWikiEnabled: false,
+    isPrivate: repo.visibility !== "public",
+    visibility: repo.visibility === "public" ? "PUBLIC" : "PRIVATE",
     viewerPermission,
     defaultBranchRef: { name: repo.defaultBranch },
     mergeCommitAllowed: false,
