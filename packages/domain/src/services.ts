@@ -3,6 +3,8 @@ import { hashToken, safeEqual, tokenPrefix } from "@forgit/auth/crypto";
 import { assertRepoName, type GitClient } from "@forgit/git-client";
 import { signBody } from "@forgit/auth/crypto";
 
+import { assertWebhookUrl } from "./webhook.ts";
+
 import type { ForgeStore } from "./store.ts";
 import {
   ForgeError,
@@ -102,8 +104,10 @@ export function createServices(store: ForgeStore, git: GitClient, origin: string
           const body = JSON.stringify({ event, payload });
           const signature = await signBody(hook.secret, body);
           try {
+            assertWebhookUrl(hook.url);
             const response = await fetch(hook.url, {
               method: "POST",
+              redirect: "manual",
               headers: {
                 "content-type": "application/json",
                 "x-forgit-event": event,

@@ -1,5 +1,11 @@
 import type { Services } from "@forgit/domain";
-import { ForgeError, type Actor, type PullRequest, type Repository } from "@forgit/domain";
+import {
+  assertWebhookUrl,
+  ForgeError,
+  type Actor,
+  type PullRequest,
+  type Repository,
+} from "@forgit/domain";
 
 type Ctx = { services: Services; actor: Actor | null; origin: string };
 
@@ -432,6 +438,7 @@ async function repoRoute(
       active?: boolean;
     };
     if (!body.config?.url) throw new ForgeError("config.url is required", 422, "webhook");
+    assertWebhookUrl(body.config.url);
     const hook = {
       id: crypto.randomUUID(),
       repositoryId: repo.id,

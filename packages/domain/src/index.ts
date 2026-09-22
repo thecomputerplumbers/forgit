@@ -23,4 +23,5 @@ export type {
 export type { ForgeStore } from "./store.ts";
 export { MemoryStore } from "./memory.ts";
 export { createServices } from "./services.ts";
+export { assertWebhookUrl } from "./webhook.ts";
 export type { Services } from "./services.ts";
