@@ -270,6 +270,24 @@ describe("mcp", () => {
       ref: "agent",
     })) as { content: string };
     assert.match(file.content, /agent/);
+    const ctx = { services, actor: alice, origin: services.origin };
+    const restPr = await handleGithubRest(
+      new Request(`https://git.example.com/api/v3/repos/acme/widget/pulls/${opened.number}`),
+      ctx,
+    );
+    const restBody = (await restPr?.json()) as {
+      title: string;
+      head: { sha: string; ref: string };
+    };
+    assert.equal(restBody.title, read.title);
+    assert.equal(restBody.head.sha, read.headSha);
+    assert.equal(restBody.head.ref, "agent");
+    const restFile = await handleGithubRest(
+      new Request("https://git.example.com/api/v3/repos/acme/widget/contents/AGENT.md?ref=agent"),
+      ctx,
+    );
+    const restContents = (await restFile?.json()) as { content: string };
+    assert.equal(restContents.content, file.content);
   });
 });
 
