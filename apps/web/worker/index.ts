@@ -47,6 +47,7 @@ export default {
       }
       if (
         url.pathname === "/mcp" ||
+        url.pathname === "/api/v3" ||
         url.pathname.startsWith("/api/v3/") ||
         url.pathname === "/api/graphql"
       ) {

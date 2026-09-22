@@ -55,7 +55,9 @@ POST   /api/v3/repos/{owner}/{repo}/hooks
 
 `viewer { login }` for `gh auth status`, plus `createPullRequest`, `addPullRequestReview`, and `mergePullRequest`.
 
-`GET /api/v3/` returns 200 and `X-OAuth-Scopes`. `gh auth status` treats any other status as an invalid token.
+`GET /api/v3` and `GET /api/v3/` return 200 and `X-OAuth-Scopes`. `gh auth status` requests the path without a trailing slash and treats any other status as an invalid token.
+
+`GET /users/{login}` returns an organization when the login is an organization slug. `gh repo create` without `--add-readme` then calls the `createRepository` mutation with that `node_id`.
 
 Node ids:
 

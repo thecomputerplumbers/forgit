@@ -81,6 +81,33 @@ describe("github rest and graphql", () => {
     );
     const body = (await viewer?.json()) as { data: { viewer: { login: string } } };
     assert.equal(body.data.viewer.login, "alice");
+    const bare = await handleGithubRest(new Request("https://git.example.com/api/v3"), ctx);
+    assert.equal(bare?.status, 200);
+    const owner = await handleGithubRest(
+      new Request("https://git.example.com/api/v3/users/acme"),
+      ctx,
+    );
+    const ownerBody = (await owner?.json()) as { type: string; node_id: string };
+    assert.equal(ownerBody.type, "Organization");
+    assert.equal(ownerBody.node_id, "forgit:org:acme");
+    const created = await handleGithubGraphql(
+      new Request("https://git.example.com/api/graphql", {
+        method: "POST",
+        body: JSON.stringify({
+          query:
+            "mutation RepositoryCreate($input: CreateRepositoryInput!) { createRepository(input: $input) { repository { name owner { login } } } }",
+          variables: {
+            input: { name: "other", ownerId: "forgit:org:acme", visibility: "PRIVATE" },
+          },
+        }),
+      }),
+      ctx,
+    );
+    const createdBody = (await created?.json()) as {
+      data: { createRepository: { repository: { name: string; owner: { login: string } } } };
+    };
+    assert.equal(createdBody.data.createRepository.repository.name, "other");
+    assert.equal(createdBody.data.createRepository.repository.owner.login, "acme");
   });
 
   it("creates a pull request through the GraphQL mutation gh uses", async () => {

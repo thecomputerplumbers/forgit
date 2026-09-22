@@ -142,6 +142,28 @@ async function route(
     );
   }
 
+  const userLookup = path.match(/^\/users\/([^/]+)$/);
+  if (userLookup && method === "GET") {
+    const login = decodeURIComponent(userLookup[1] ?? "");
+    const org = await ctx.services.store.getOrganizationBySlug(login);
+    if (org) {
+      return json({
+        login: org.slug,
+        id: org.id,
+        node_id: orgNodeId(org.slug),
+        type: "Organization",
+      });
+    }
+    const user = await ctx.services.store.getUserByLogin(login);
+    if (!user) throw new ForgeError("Not Found", 404, "not_found");
+    return json({
+      login: user.login,
+      id: user.id,
+      node_id: userNodeId(user.login),
+      type: "User",
+    });
+  }
+
   if (method === "GET" && path === "/user") {
     const actor = await requireActor(ctx);
     const row = await ctx.services.store.getUser(actor.userId);
@@ -490,6 +512,36 @@ export async function handleGithubGraphql(request: Request, ctx: Ctx): Promise<R
     const query = body.query ?? "";
     const variables = body.variables ?? {};
     if (!ctx.actor) return json({ errors: [{ message: "Requires authentication" }] }, 401);
+    if (query.includes("createRepository")) {
+      const input = (variables.input ?? variables) as {
+        name?: string;
+        description?: string;
+        visibility?: string;
+        ownerId?: string;
+      };
+      if (!input.name) return json({ errors: [{ message: "name is required" }] }, 422);
+      const owner = await ownerSlug(ctx, String(input.ownerId ?? ""));
+      if (!owner) return json({ errors: [{ message: "Unknown owner" }] }, 404);
+      const created = await ctx.services.createRepository(ctx.actor, {
+        owner,
+        name: input.name,
+        description: typeof input.description === "string" ? input.description : "",
+        visibility:
+          String(input.visibility ?? "PRIVATE").toUpperCase() === "PUBLIC" ? "public" : "private",
+      });
+      return json({
+        data: {
+          createRepository: {
+            repository: {
+              id: repoNodeId(created.owner, created.repo.name),
+              name: created.repo.name,
+              owner: { login: created.owner },
+              url: `${ctx.origin}/${created.owner}/${created.repo.name}`,
+            },
+          },
+        },
+      });
+    }
     if (query.includes("createPullRequest")) {
       const input = (variables.input ?? variables) as {
         repositoryId?: string;
@@ -608,6 +660,24 @@ function graphqlPr(ctx: Ctx, owner: string, name: string, pr: PullRequest, login
 
 export function repoNodeId(owner: string, name: string) {
   return `forgit:repo:${owner}/${name}`;
+}
+
+export function orgNodeId(slug: string) {
+  return `forgit:org:${slug}`;
+}
+
+export function userNodeId(login: string) {
+  return `forgit:user:${login}`;
+}
+
+async function ownerSlug(ctx: Ctx, ownerId: string): Promise<string | null> {
+  const org = ownerId.match(/^forgit:org:([^/]+)$/);
+  if (org?.[1]) return org[1];
+  if (ownerId.startsWith("forgit:user:") || ownerId === "") {
+    const orgs = await ctx.services.store.listOrganizationsForUser(ctx.actor.userId);
+    return orgs[0]?.slug ?? null;
+  }
+  return null;
 }
 
 export function pullNodeId(owner: string, name: string, number: number) {
