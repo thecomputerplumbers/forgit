@@ -356,6 +356,17 @@ async function repoRoute(
     const number = Number(pull[1]);
     const pr = await ctx.services.syncPullRequest(owner, name, number);
     if (!pr) return json({ message: "Not Found" }, 404);
+    const accept = request.headers.get("accept") ?? "";
+    if (
+      accept.includes("application/vnd.github.v3.diff") ||
+      accept.includes("application/vnd.github.v3.patch")
+    ) {
+      const compare = await ctx.services.git.compare(owner, name, pr.baseSha, pr.headSha);
+      return new Response(compare?.patch ?? "", {
+        status: 200,
+        headers: { "content-type": "text/plain; charset=utf-8" },
+      });
+    }
     return json(prBody(ctx, owner, name, pr, await authorLogin(ctx, pr.authorId)));
   }
 
@@ -514,12 +525,10 @@ export async function handleGithubGraphql(request: Request, ctx: Ctx): Promise<R
     if (!ctx.actor) return json({ errors: [{ message: "Requires authentication" }] }, 401);
     if (query.includes("repository(owner:")) {
       const owner = String(variables.owner ?? "");
-      const name = String(variables.name ?? "");
+      const name = String(variables.name ?? variables.repo ?? "");
       try {
         const loaded = await ctx.services.requireRepo(ctx.actor, owner, name, "read");
-        return json({
-          data: { repository: graphqlRepo(ctx, owner, loaded.repo, loaded.actual) },
-        });
+        return await graphqlRepository(ctx, query, variables, owner, loaded.repo, loaded.actual);
       } catch (error) {
         if (error instanceof ForgeError && error.status === 404) {
           return json({
@@ -650,6 +659,61 @@ export async function handleGithubGraphql(request: Request, ctx: Ctx): Promise<R
   } catch (error) {
     return failure(error);
   }
+}
+
+async function graphqlRepository(
+  ctx: Ctx,
+  query: string,
+  variables: Record<string, unknown>,
+  owner: string,
+  repo: Repository,
+  permission: string,
+) {
+  if (query.includes("pullRequest(number")) {
+    const number = Number(variables.pr_number ?? variables.number);
+    const pr = await ctx.services.store.getPullRequest(repo.id, number);
+    if (!pr) {
+      return json({
+        data: { repository: { pullRequest: null } },
+        errors: [{ type: "NOT_FOUND", message: "Not Found" }],
+      });
+    }
+    return json({
+      data: {
+        repository: {
+          pullRequest: graphqlPr(ctx, owner, repo.name, pr, await authorLogin(ctx, pr.authorId)),
+        },
+      },
+    });
+  }
+  if (query.includes("pullRequests(")) {
+    const states = Array.isArray(variables.state) ? variables.state.map(String) : ["OPEN"];
+    const wanted = new Set(states.map((state) => state.toUpperCase()));
+    const base = typeof variables.baseBranch === "string" ? variables.baseBranch : "";
+    const head = typeof variables.headBranch === "string" ? variables.headBranch : "";
+    const pulls = (await ctx.services.store.listPullRequests(repo.id, "all")).filter((pr) => {
+      if (base && pr.targetRef !== base) return false;
+      if (head && pr.sourceRef !== head) return false;
+      const state = pr.state === "open" ? "OPEN" : pr.state === "merged" ? "MERGED" : "CLOSED";
+      return wanted.has(state);
+    });
+    const nodes = [];
+    for (const pr of pulls) {
+      nodes.push(graphqlPr(ctx, owner, repo.name, pr, await authorLogin(ctx, pr.authorId)));
+    }
+    return json({
+      data: {
+        repository: {
+          pullRequests: {
+            totalCount: nodes.length,
+            nodes,
+            pageInfo: { hasNextPage: false, endCursor: "" },
+          },
+        },
+      },
+    });
+  }
+  return json({ data: { repository: graphqlRepo(ctx, owner, repo, permission) } });
 }
 
 function graphqlRepo(ctx: Ctx, owner: string, repo: Repository, permission: string) {

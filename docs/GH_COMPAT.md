@@ -59,6 +59,8 @@ POST   /api/v3/repos/{owner}/{repo}/hooks
 
 `GET /users/{login}` returns an organization when the login is an organization slug. `gh repo create` without `--add-readme` then calls the `createRepository` mutation with that `node_id`.
 
+`gh pr list` and `gh pr view` read `repository.pullRequests` and `repository.pullRequest(number:)`. `gh pr diff` sends `Accept: application/vnd.github.v3.diff` to `GET /pulls/{number}` and expects a unified diff body.
+
 Node ids:
 
 ```text

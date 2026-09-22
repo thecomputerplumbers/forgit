@@ -37,6 +37,35 @@ describe("github rest and graphql", () => {
     );
     assert.equal(created?.status, 201);
     const pr = (await created?.json()) as { number: number };
+    const diff = await handleGithubRest(
+      new Request(`https://git.example.com/api/v3/repos/acme/widget/pulls/${pr.number}`, {
+        headers: { accept: "application/vnd.github.v3.diff" },
+      }),
+      ctx,
+    );
+    assert.equal(diff?.headers.get("content-type"), "text/plain; charset=utf-8");
+    assert.match(await diff!.text(), /NOTE\.md/);
+    const listed = await handleGithubGraphql(
+      new Request("https://git.example.com/api/graphql", {
+        method: "POST",
+        body: JSON.stringify({
+          query: `query PullRequestList($owner: String!, $repo: String!) {
+            repository(owner: $owner, name: $repo) {
+              pullRequests(states: $state, first: 30) { totalCount nodes { number title } }
+            }
+          }`,
+          variables: { owner: "acme", repo: "widget", state: ["OPEN"] },
+        }),
+      }),
+      ctx,
+    );
+    const listedBody = (await listed?.json()) as {
+      data: {
+        repository: { pullRequests: { totalCount: number; nodes: Array<{ number: number }> } };
+      };
+    };
+    assert.equal(listedBody.data.repository.pullRequests.totalCount, 1);
+    assert.equal(listedBody.data.repository.pullRequests.nodes[0]?.number, pr.number);
     await services.reviewPullRequest(alice, "acme", "widget", pr.number, { state: "approved" });
     const review = await handleGithubRest(
       new Request(`https://git.example.com/api/v3/repos/acme/widget/pulls/${pr.number}/reviews`, {
