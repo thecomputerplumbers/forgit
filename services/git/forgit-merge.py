@@ -36,28 +36,28 @@ class Handler(BaseHTTPRequestHandler):
         presented = self.headers.get("Authorization", "")
         expected = f"Bearer {TOKEN}"
         if not TOKEN or not hmac.compare_digest(presented, expected):
-            return self.finish(401, {"message": "unauthorized"})
+            return self.respond(401, {"message": "unauthorized"})
         length = int(self.headers.get("Content-Length", "0"))
         if length > 2_000_000:
-            return self.finish(413, {"message": "body too large"})
+            return self.respond(413, {"message": "body too large"})
         try:
             payload = json.loads(self.rfile.read(length) or b"{}")
         except json.JSONDecodeError:
-            return self.finish(400, {"message": "invalid json"})
+            return self.respond(400, {"message": "invalid json"})
         try:
             if self.path == "/_forgit/merge":
-                return self.finish(200, merge(payload))
+                return self.respond(200, merge(payload))
             if self.path == "/_forgit/compare":
-                return self.finish(200, compare(payload))
+                return self.respond(200, compare(payload))
             if self.path == "/_forgit/branch":
-                return self.finish(200, branch(payload))
+                return self.respond(200, branch(payload))
             if self.path == "/_forgit/file":
-                return self.finish(200, write_file(payload))
-            return self.finish(404, {"message": "not found"})
+                return self.respond(200, write_file(payload))
+            return self.respond(404, {"message": "not found"})
         except HelperError as error:
-            return self.finish(error.status, {"message": str(error)})
+            return self.respond(error.status, {"message": str(error)})
 
-    def finish(self, status, body):
+    def respond(self, status, body):
         encoded = json.dumps(body).encode()
         self.send_response(status)
         self.send_header("content-type", "application/json")
