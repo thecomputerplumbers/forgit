@@ -108,6 +108,36 @@ describe("pull requests", () => {
     assert.equal((await store.getPullRequest(repo.id, 1))?.headSha, second);
   });
 
+  it("refuses a merge when both sides edit the same file", async () => {
+    const { services, git, alice, bob } = await world();
+    git.commitFiles({
+      owner: "acme",
+      repo: "widget",
+      branch: "feature",
+      message: "feature",
+      files: { "README.md": "feature\n" },
+    });
+    await services.openPullRequest(bob, "acme", "widget", {
+      title: "Conflict",
+      sourceRef: "feature",
+      targetRef: "main",
+    });
+    const moved = git.commitFiles({
+      owner: "acme",
+      repo: "widget",
+      branch: "main",
+      message: "main moves",
+      files: { "README.md": "main\n" },
+      principal: "svc:forgit-merge",
+    });
+    await services.reviewPullRequest(alice, "acme", "widget", 1, { state: "approved" });
+    await assert.rejects(
+      () => services.mergePullRequest(alice, "acme", "widget", 1),
+      (error: unknown) => error instanceof ForgeError && error.code === "conflict",
+    );
+    assert.equal(git.repos.get("acme/widget")?.refs.get("main"), moved);
+  });
+
   it("fails the compare-and-swap when the recorded head no longer matches", async () => {
     const { services, git, alice, bob } = await world();
     git.commitFiles({

@@ -314,7 +314,9 @@ export class MemoryGit implements GitClient {
     if (exists && repo.protectedBranch === input.branch && input.principal !== "svc:forgit-merge") {
       throw new GitError(`rejected by rule 'lock-${input.branch}'`, 403);
     }
-    const parentSha = repo.refs.get(input.branch);
+    const parentSha =
+      repo.refs.get(input.branch) ??
+      (input.branch === repo.head ? undefined : repo.refs.get(repo.head));
     const parent = parentSha ? repo.commits.get(parentSha) : undefined;
     const tree: Snapshot = new Map(parent?.tree ?? []);
     for (const [path, contents] of Object.entries(input.files)) {

@@ -118,12 +118,14 @@ export default async function PullPage({
               Add file comment
             </button>
           </form>
-          <form action={mergeAction} className="stack">
-            <input type="hidden" name="owner" value={owner} />
-            <input type="hidden" name="repo" value={name} />
-            <input type="hidden" name="number" value={pull.number} />
-            <button type="submit">Squash and merge</button>
-          </form>
+          {conflicts ? null : (
+            <form action={mergeAction} className="stack">
+              <input type="hidden" name="owner" value={owner} />
+              <input type="hidden" name="repo" value={name} />
+              <input type="hidden" name="number" value={pull.number} />
+              <button type="submit">Squash and merge</button>
+            </form>
+          )}
         </>
       ) : null}
     </Shell>

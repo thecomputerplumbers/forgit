@@ -437,6 +437,10 @@ export function createServices(
         }
       }
       const author = await store.getUser(pr.authorId);
+      const compared = await git.compare(org.slug, repo.name, pr.baseSha, pr.headSha);
+      if (compared && !compared.mergeable) {
+        throw new ForgeError("Pull request has conflicts", 409, "conflict");
+      }
       const result = await git.squashMerge({
         owner: org.slug,
         repo: repo.name,
