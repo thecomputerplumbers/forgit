@@ -232,6 +232,19 @@ export function createServices(
       await audit(actor, "repo.archive", repo.id, `${org.slug}/${repo.name}`);
     },
 
+    async destroyRepository(actor: Actor, owner: string, name: string) {
+      const { repo, org } = await requireRepo(actor, owner, name, "admin");
+      const target = `${org.slug}/${repo.name}`;
+      try {
+        await git.deleteRepository(org.slug, repo.name);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Git store delete failed";
+        throw new ForgeError(message, 503, "git");
+      }
+      await store.deleteRepository(repo.id);
+      await audit(actor, "repo.delete", null, target);
+    },
+
     requireRepo,
     level,
 

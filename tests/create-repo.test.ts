@@ -44,4 +44,21 @@ describe("repository creation", () => {
     assert.equal(store.audit.at(-1)?.requestId, "req-123");
     assert.equal(store.audit.at(-1)?.action, "repo.create");
   });
+
+  it("deletes the git repository and its metadata together", async () => {
+    const store = new MemoryStore();
+    store.seedUser(
+      { id: "alice", name: "Alice", email: "alice@example.com", login: "alice" },
+      { id: "org", name: "Acme", slug: "acme", role: "owner" },
+    );
+    const git = new MemoryGit("https://git.example.com");
+    const services = createServices(store, git, "https://git.example.com", "req-delete");
+    const alice = await services.actorFromUser("alice");
+    await services.createRepository(alice, { owner: "acme", name: "widget" });
+    await services.destroyRepository(alice, "acme", "widget");
+    assert.equal(await store.getRepositoryByName("org", "widget"), null);
+    assert.equal(await git.summary("acme", "widget"), null);
+    assert.equal(store.audit.at(-1)?.action, "repo.delete");
+    assert.equal(store.audit.at(-1)?.requestId, "req-delete");
+  });
 });

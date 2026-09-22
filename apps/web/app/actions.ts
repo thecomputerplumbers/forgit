@@ -154,6 +154,22 @@ export async function memberAction(formData: FormData) {
   redirect(`/${owner}/${name}/settings`);
 }
 
+export async function deleteRepositoryAction(formData: FormData) {
+  const owner = String(formData.get("owner") ?? "");
+  const name = String(formData.get("repo") ?? "");
+  const confirm = String(formData.get("confirm") ?? "");
+  if (confirm !== name)
+    redirect(`/${owner}/${name}/settings?error=Type%20the%20repository%20name%20to%20delete%20it`);
+  const { services, actor } = await requireOrganization();
+  try {
+    await services.destroyRepository(actor, owner, name);
+  } catch (error) {
+    if (!(error instanceof ForgeError)) throw error;
+    redirect(`/${owner}/${name}/settings?error=${encodeURIComponent(error.message)}`);
+  }
+  redirect("/");
+}
+
 export async function archiveAction(formData: FormData) {
   const owner = String(formData.get("owner") ?? "");
   const name = String(formData.get("repo") ?? "");

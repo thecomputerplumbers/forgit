@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
-import { archiveAction, memberAction, rulesAction } from "@/app/actions";
+import { archiveAction, deleteRepositoryAction, memberAction, rulesAction } from "@/app/actions";
 import { RepoNav, Shell } from "@/components/shell";
 import { requireOrganization } from "@/lib/session";
 
@@ -104,6 +104,20 @@ export default async function SettingsPage({
           <input type="hidden" name="repo" value={name} />
           <button className="quiet" type="submit">
             Archive repository
+          </button>
+        </form>
+      ) : null}
+      {admin ? (
+        <form action={deleteRepositoryAction} className="stack">
+          <h2>Delete</h2>
+          <input type="hidden" name="owner" value={owner} />
+          <input type="hidden" name="repo" value={name} />
+          <label>
+            Type {name} to delete the repository and its Git data
+            <input name="confirm" autoComplete="off" />
+          </label>
+          <button className="quiet" type="submit">
+            Delete repository
           </button>
         </form>
       ) : null}

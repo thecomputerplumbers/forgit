@@ -254,6 +254,22 @@ export function createSqlStore(sql: Sql): ForgeStore {
     },
 
     async deleteRepository(id) {
+      await sql.run(
+        `DELETE FROM pull_request_comments WHERE pull_request_id IN (SELECT id FROM pull_requests WHERE repository_id = ?)`,
+        [id],
+      );
+      await sql.run(
+        `DELETE FROM pull_request_reviews WHERE pull_request_id IN (SELECT id FROM pull_requests WHERE repository_id = ?)`,
+        [id],
+      );
+      await sql.run(`DELETE FROM pull_requests WHERE repository_id = ?`, [id]);
+      await sql.run(
+        `DELETE FROM check_annotations WHERE check_run_id IN (SELECT id FROM check_runs WHERE repository_id = ?)`,
+        [id],
+      );
+      await sql.run(`DELETE FROM check_runs WHERE repository_id = ?`, [id]);
+      await sql.run(`DELETE FROM checks WHERE repository_id = ?`, [id]);
+      await sql.run(`DELETE FROM webhooks WHERE repository_id = ?`, [id]);
       await sql.run(`DELETE FROM repository_members WHERE repository_id = ?`, [id]);
       await sql.run(`DELETE FROM repository_rules WHERE repository_id = ?`, [id]);
       await sql.run(`DELETE FROM repositories WHERE id = ?`, [id]);

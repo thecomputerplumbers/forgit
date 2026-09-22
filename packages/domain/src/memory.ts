@@ -135,9 +135,21 @@ export class MemoryStore implements ForgeStore {
   }
 
   async deleteRepository(id: string) {
+    const pullIds = new Set(
+      this.pulls.filter((pull) => pull.repositoryId === id).map((pull) => pull.id),
+    );
+    const checkIds = new Set(
+      this.checks.filter((check) => check.repositoryId === id).map((check) => check.id),
+    );
     this.repositories.delete(id);
     this.repoMembers = this.repoMembers.filter((member) => member.repositoryId !== id);
     this.rules.delete(id);
+    this.pulls = this.pulls.filter((pull) => pull.repositoryId !== id);
+    this.reviews = this.reviews.filter((review) => !pullIds.has(review.pullRequestId));
+    this.comments = this.comments.filter((comment) => !pullIds.has(comment.pullRequestId));
+    this.checks = this.checks.filter((check) => check.repositoryId !== id);
+    this.annotations = this.annotations.filter((note) => !checkIds.has(note.checkRunId));
+    this.webhooks = this.webhooks.filter((hook) => hook.repositoryId !== id);
   }
 
   async updateRepository(
