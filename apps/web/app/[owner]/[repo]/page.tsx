@@ -28,6 +28,7 @@ export default async function RepositoryPage({
         : null;
   const host = (await headers()).get("host") ?? owner;
   const clone = services.cloneUrl(owner, name);
+  const authed = clone.replace("://", "://git@");
   return (
     <Shell host={host} login={user.login}>
       <div className="sheet-head">
@@ -37,7 +38,8 @@ export default async function RepositoryPage({
         <p className="muted">{loaded.repo.description || "No description"}</p>
       </div>
       <RepoNav owner={owner} name={name} current="Code" />
-      <p className="pad clone">git clone {clone}</p>
+      <p className="pad clone">git clone {authed}</p>
+      <p className="pad muted">When Git asks for a password, paste a personal access token.</p>
       {gitMessage ? <p className="error">{gitMessage}</p> : null}
       {!gitMessage && !summary?.head ? (
         <div className="pad">
@@ -45,7 +47,7 @@ export default async function RepositoryPage({
             This repository has no commits yet. Push the default branch {loaded.repo.defaultBranch}{" "}
             over HTTPS.
           </p>
-          <pre className="clone">{`git remote add origin ${clone}\ngit push -u origin ${loaded.repo.defaultBranch}`}</pre>
+          <pre className="clone">{`git remote add origin ${authed}\ngit push -u origin ${loaded.repo.defaultBranch}`}</pre>
         </div>
       ) : summary?.head ? (
         <>
