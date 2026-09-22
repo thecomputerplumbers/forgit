@@ -153,6 +153,26 @@ const RESERVED = new Set([
   "repos.js",
 ]);
 
+/** Smart HTTP, LFS, and bundle reads. Repo create and delete stay off this path. */
+function allowedGit(method: string, suffix: string): boolean {
+  if (suffix === "/info/refs") return method === "GET" || method === "HEAD";
+  if (suffix === "/git-upload-pack" || suffix === "/git-receive-pack") return method === "POST";
+  if (suffix === "/info/lfs/objects/batch" || suffix === "/info/lfs/verify")
+    return method === "POST";
+  if (suffix.startsWith("/info/lfs/objects/") && suffix !== "/info/lfs/objects/batch") {
+    return method === "GET" || method === "HEAD" || method === "PUT";
+  }
+  if (suffix === "/bundles/list" || suffix === "/bundles/catchup") return method === "GET";
+  if (
+    suffix.startsWith("/bundles/") &&
+    suffix !== "/bundles/list" &&
+    suffix !== "/bundles/catchup"
+  ) {
+    return method === "GET" || method === "HEAD";
+  }
+  return false;
+}
+
 /** True when this Git route stores objects. LFS batch uploads are decided from the body. */
 export function gitWrite(method: string, suffix: string): boolean {
   if (method === "POST" && suffix === "/git-receive-pack") return true;
@@ -192,12 +212,6 @@ export function classifyPath(pathname: string, method: string): Classified {
   if (RESERVED.has(owner) || !NAME.test(owner) || !NAME.test(repo)) return { kind: "app" };
   if (owner.includes("..") || repo.includes("..")) return { kind: "app" };
   const write = gitWrite(method, suffix);
-  const allowed =
-    suffix === "" ||
-    suffix === "/info/refs" ||
-    suffix === "/git-upload-pack" ||
-    suffix === "/git-receive-pack" ||
-    suffix.startsWith("/info/lfs");
-  if (!allowed) return { kind: "app" };
+  if (!allowedGit(method, suffix)) return { kind: "app" };
   return { kind: "git", owner, repo, write, suffix };
 }

@@ -72,6 +72,12 @@ describe("git path classification", () => {
     assert.equal(download.kind === "git" && download.write, false);
     const batch = classifyPath("/acme/widget.git/info/lfs/objects/batch", "POST");
     assert.equal(batch.kind === "git" && batch.write, false);
+    assert.equal(classifyPath("/acme/widget.git", "PUT").kind, "app");
+    assert.equal(classifyPath("/acme/widget.git", "DELETE").kind, "app");
+    assert.equal(classifyPath("/acme/widget.git/git-receive-pack", "GET").kind, "app");
+    const bundles = classifyPath("/acme/widget.git/bundles/list", "GET");
+    assert.equal(bundles.kind === "git" && bundles.write, false);
+    assert.equal(classifyPath("/acme/widget.git/bundles/hourly/pack.bundle", "PUT").kind, "app");
     assert.equal(lfsBatchWrites('{"operation":"upload","objects":[]}'), true);
     assert.equal(lfsBatchWrites('{"operation":"download","objects":[]}'), false);
     assert.equal(lfsBatchWrites("not-json"), true);
