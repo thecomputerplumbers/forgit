@@ -189,10 +189,20 @@ function relay(url: string, request: Request): Request {
   } as RequestInit);
 }
 
+function gitStorageReady(env: Cloudflare.Env): boolean {
+  return Boolean(env.R2_ACCESS_KEY_ID && env.R2_SECRET_ACCESS_KEY);
+}
+
 async function upstream(env: Cloudflare.Env, request: Request): Promise<Response> {
   const url = new URL(request.url);
   const path = `${url.pathname}${url.search}`;
   if (env.WALGIT_URL) return fetch(relay(`${env.WALGIT_URL}${path}`, request));
+  if (!gitStorageReady(env)) {
+    return new Response("Git storage is not configured", {
+      status: 503,
+      headers: { "content-type": "text/plain; charset=utf-8" },
+    });
+  }
   const stub = env.GIT_CONTAINER.get(env.GIT_CONTAINER.idFromName("forgit"));
   return stub.fetch(relay(`http://container${path}`, request));
 }

@@ -47,7 +47,7 @@ Attach the hostname `git.thecomputerplumbers.com` to this worker (the wrangler r
 pnpm install
 pnpm --filter web db:migrate
 pnpm --filter web build
-cd apps/web && wrangler deploy
+cd apps/web && wrangler deploy --config dist/server/wrangler.json
 ```
 
 The container image build compiles pinned walgit `80e9a20b29e29aefd16a4dae6f8e274cce85cca5` from https://github.com/tobi/walgit. The first deploy is slow.

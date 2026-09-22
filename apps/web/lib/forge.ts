@@ -23,6 +23,9 @@ function containerFetch(): typeof fetch {
     const url =
       typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
     const path = new URL(url).pathname + new URL(url).search;
+    if (!env.WALGIT_URL && !(env.R2_ACCESS_KEY_ID && env.R2_SECRET_ACCESS_KEY)) {
+      return Promise.resolve(new Response("Git storage is not configured", { status: 503 }));
+    }
     const body = init?.body;
     const forwarded = {
       ...init,
