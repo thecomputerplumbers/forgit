@@ -1,11 +1,5 @@
 import type { Services } from "@forgit/domain";
-import {
-  assertWebhookUrl,
-  ForgeError,
-  type Actor,
-  type PullRequest,
-  type Repository,
-} from "@forgit/domain";
+import { ForgeError, type Actor, type PullRequest, type Repository } from "@forgit/domain";
 
 type Ctx = { services: Services; actor: Actor | null; origin: string };
 
@@ -484,26 +478,25 @@ async function repoRoute(
 
   if (rest === "/hooks" && method === "POST") {
     const actor = await requireActor(ctx);
-    const { repo } = await ctx.services.requireRepo(actor, owner, name, "admin");
     const body = (await request.json()) as {
       config?: { url?: string; secret?: string };
       events?: string[];
       active?: boolean;
     };
     if (!body.config?.url) throw new ForgeError("config.url is required", 422, "webhook");
-    assertWebhookUrl(body.config.url);
-    const hook = {
-      id: crypto.randomUUID(),
-      repositoryId: repo.id,
+    const hook = await ctx.services.createWebhook(actor, owner, name, {
       url: body.config.url,
-      secret: body.config.secret || `whsec_${crypto.randomUUID().replaceAll("-", "")}`,
-      events: body.events ?? ["*"],
-      active: body.active !== false,
-      createdAt: ctx.services.store.now(),
-    };
-    await ctx.services.store.insertWebhook(hook);
+      secret: body.config.secret,
+      events: body.events,
+      active: body.active,
+    });
     return json(
-      { id: hook.id, active: hook.active, events: hook.events, config: { url: hook.url } },
+      {
+        id: hook.id,
+        active: hook.active,
+        events: hook.events,
+        config: { url: hook.url, secret: hook.secret },
+      },
       201,
     );
   }

@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { assertWebhookUrl, ForgeError } from "@forgit/domain";
+import { assertWebhookUrl, createServices, ForgeError, MemoryStore } from "@forgit/domain";
+import { MemoryGit } from "@forgit/git-client";
 
 describe("webhook urls", () => {
   it("accepts a public https endpoint and rejects local or credentialed targets", () => {
@@ -21,5 +22,38 @@ describe("webhook urls", () => {
         (error: unknown) => error instanceof ForgeError && error.status === 422,
       );
     }
+  });
+
+  it("lets an admin create a webhook and refuses a token without webhook:admin", async () => {
+    const store = new MemoryStore();
+    store.seedUser(
+      { id: "alice", name: "Alice", email: "alice@example.com", login: "alice" },
+      { id: "org", name: "Acme", slug: "acme", role: "owner" },
+    );
+    const services = createServices(
+      store,
+      new MemoryGit("https://git.example.com"),
+      "https://git.example.com",
+    );
+    const alice = await services.actorFromUser("alice");
+    await services.createRepository(alice, { owner: "acme", name: "widget" });
+    const hook = await services.createWebhook(alice, "acme", "widget", {
+      url: "https://hooks.example.com/forgit",
+    });
+    assert.match(hook.secret, /^whsec_/);
+    assert.equal(store.audit.at(-1)?.action, "webhook.create");
+    const minted = await services.createToken(alice, { name: "narrow", scopes: ["repo:admin"] });
+    const narrow = await services.actorFromAuthorization(`Bearer ${minted.plaintext}`);
+    await assert.rejects(
+      () =>
+        services.createWebhook(narrow!, "acme", "widget", {
+          url: "https://hooks.example.com/other",
+        }),
+      (error: unknown) => error instanceof ForgeError && error.status === 403,
+    );
+    await assert.rejects(
+      () => services.createWebhook(alice, "acme", "widget", { url: "https://127.0.0.1/hook" }),
+      (error: unknown) => error instanceof ForgeError && error.status === 422,
+    );
   });
 });

@@ -545,6 +545,43 @@ export function createServices(
       await audit(actor, "token.revoke", null, tokenId, {});
     },
 
+    async createWebhook(
+      actor: Actor,
+      owner: string,
+      name: string,
+      input: { url: string; events?: string[]; secret?: string; active?: boolean },
+    ) {
+      const { repo } = await requireRepo(actor, owner, name, "admin");
+      if (!hasPullScope(actor, "webhook:admin")) {
+        throw new ForgeError("Forbidden", 403, "forbidden");
+      }
+      assertWebhookUrl(input.url);
+      const events = (input.events ?? ["*"]).map((event) => event.trim()).filter(Boolean);
+      const secret = input.secret?.trim() || `whsec_${crypto.randomUUID().replaceAll("-", "")}`;
+      const hook = {
+        id: crypto.randomUUID(),
+        repositoryId: repo.id,
+        url: input.url,
+        secret,
+        events: events.length > 0 ? events : ["*"],
+        active: input.active !== false,
+        createdAt: store.now(),
+      };
+      await store.insertWebhook(hook);
+      await audit(actor, "webhook.create", repo.id, hook.id, { url: hook.url });
+      return hook;
+    },
+
+    async deleteWebhook(actor: Actor, owner: string, name: string, hookId: string) {
+      const { repo } = await requireRepo(actor, owner, name, "admin");
+      if (!hasPullScope(actor, "webhook:admin")) {
+        throw new ForgeError("Forbidden", 403, "forbidden");
+      }
+      const ok = await store.deleteWebhook(hookId, repo.id);
+      if (!ok) throw new ForgeError("Webhook not found", 404, "not_found");
+      await audit(actor, "webhook.delete", repo.id, hookId, {});
+    },
+
     cloneUrl(owner: string, name: string) {
       return `${publicOrigin}/${owner}/${name}.git`;
     },

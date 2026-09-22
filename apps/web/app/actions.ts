@@ -154,6 +154,39 @@ export async function memberAction(formData: FormData) {
   redirect(`/${owner}/${name}/settings`);
 }
 
+export async function createWebhookAction(
+  formData: FormData,
+): Promise<{ secret: string } | { error: string }> {
+  const owner = String(formData.get("owner") ?? "");
+  const name = String(formData.get("repo") ?? "");
+  const { services, actor } = await requireOrganization();
+  try {
+    const hook = await services.createWebhook(actor, owner, name, {
+      url: String(formData.get("url") ?? ""),
+      events: String(formData.get("events") ?? "*")
+        .split(/[\s,]+/)
+        .filter(Boolean),
+    });
+    return { secret: hook.secret };
+  } catch (error) {
+    if (!(error instanceof ForgeError)) throw error;
+    return { error: error.message };
+  }
+}
+
+export async function deleteWebhookAction(formData: FormData) {
+  const owner = String(formData.get("owner") ?? "");
+  const name = String(formData.get("repo") ?? "");
+  const { services, actor } = await requireOrganization();
+  try {
+    await services.deleteWebhook(actor, owner, name, String(formData.get("id") ?? ""));
+  } catch (error) {
+    if (!(error instanceof ForgeError)) throw error;
+    redirect(`/${owner}/${name}/settings?error=${encodeURIComponent(error.message)}`);
+  }
+  redirect(`/${owner}/${name}/settings`);
+}
+
 export async function deleteRepositoryAction(formData: FormData) {
   const owner = String(formData.get("owner") ?? "");
   const name = String(formData.get("repo") ?? "");

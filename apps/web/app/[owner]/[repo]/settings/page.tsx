@@ -1,7 +1,14 @@
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
-import { archiveAction, deleteRepositoryAction, memberAction, rulesAction } from "@/app/actions";
+import {
+  archiveAction,
+  deleteRepositoryAction,
+  deleteWebhookAction,
+  memberAction,
+  rulesAction,
+} from "@/app/actions";
+import { WebhookForm } from "@/components/webhook-form";
 import { RepoNav, Shell } from "@/components/shell";
 import { requireOrganization } from "@/lib/session";
 
@@ -79,17 +86,24 @@ export default async function SettingsPage({
       ) : null}
       <div className="pad">
         <h2>Webhooks</h2>
-        {hooks.length === 0 ? (
-          <p className="muted">
-            None configured. Create them with the GitHub-compatible hooks API.
-          </p>
-        ) : null}
+        {hooks.length === 0 ? <p className="muted">None configured.</p> : null}
         {hooks.map((hook) => (
-          <p key={hook.id}>
-            {hook.url} · {hook.events.join(", ")}
-          </p>
+          <form action={deleteWebhookAction} className="row" key={hook.id}>
+            <input type="hidden" name="owner" value={owner} />
+            <input type="hidden" name="repo" value={name} />
+            <input type="hidden" name="id" value={hook.id} />
+            <span>
+              {hook.url} · {hook.events.join(", ")}
+            </span>
+            {admin ? (
+              <button className="quiet" type="submit">
+                Delete
+              </button>
+            ) : null}
+          </form>
         ))}
       </div>
+      {admin ? <WebhookForm owner={owner} repo={name} /> : null}
       <div className="pad">
         <h2>Audit</h2>
         {audit.map((event) => (
