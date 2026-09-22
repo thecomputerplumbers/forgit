@@ -218,8 +218,13 @@ export function createServices(
         await git.createRepository(org.slug, repo.name);
         await git.setProtectedBranch(org.slug, repo.name, repo.defaultBranch);
       } catch (error) {
-        await store.deleteRepository(id);
         const message = error instanceof Error ? error.message : "Git store creation failed";
+        try {
+          await git.deleteRepository(org.slug, repo.name);
+        } catch {
+          // Storage may be down, or the repo may never have been created.
+        }
+        await store.deleteRepository(id);
         throw new ForgeError(message, 503, "git");
       }
       await audit(actor, "repo.create", id, `${org.slug}/${repo.name}`, {}, requestId);
