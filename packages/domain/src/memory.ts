@@ -134,6 +134,12 @@ export class MemoryStore implements ForgeStore {
     return rows;
   }
 
+  async deleteRepository(id: string) {
+    this.repositories.delete(id);
+    this.repoMembers = this.repoMembers.filter((member) => member.repositoryId !== id);
+    this.rules.delete(id);
+  }
+
   async updateRepository(
     id: string,
     patch: Partial<Pick<Repository, "description" | "archived" | "defaultBranch" | "visibility">>,

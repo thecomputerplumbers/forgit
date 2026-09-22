@@ -253,6 +253,12 @@ export function createSqlStore(sql: Sql): ForgeStore {
       return rows[0] ? repo(rows[0]) : null;
     },
 
+    async deleteRepository(id) {
+      await sql.run(`DELETE FROM repository_members WHERE repository_id = ?`, [id]);
+      await sql.run(`DELETE FROM repository_rules WHERE repository_id = ?`, [id]);
+      await sql.run(`DELETE FROM repositories WHERE id = ?`, [id]);
+    },
+
     async getRepositoryByName(organizationId, name) {
       const rows = await sql.all<RepoRow>(
         `SELECT * FROM repositories WHERE organization_id = ? AND name = ?`,

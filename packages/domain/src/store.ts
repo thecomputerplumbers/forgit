@@ -40,6 +40,7 @@ export interface ForgeStore {
     id: string,
     patch: Partial<Pick<Repository, "description" | "archived" | "defaultBranch" | "visibility">>,
   ): Promise<void>;
+  deleteRepository(id: string): Promise<void>;
   allocatePullNumber(repositoryId: string): Promise<number>;
 
   upsertRepoMember(member: RepoMember): Promise<void>;

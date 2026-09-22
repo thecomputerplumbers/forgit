@@ -213,11 +213,9 @@ export function createServices(store: ForgeStore, git: GitClient, origin: string
         await git.createRepository(org.slug, repo.name);
         await git.setProtectedBranch(org.slug, repo.name, repo.defaultBranch);
       } catch (error) {
-        await store.updateRepository(id, {
-          archived: true,
-          description: "Git store creation failed",
-        });
-        throw error;
+        await store.deleteRepository(id);
+        const message = error instanceof Error ? error.message : "Git store creation failed";
+        throw new ForgeError(message, 503, "git");
       }
       await audit(actor, "repo.create", id, `${org.slug}/${repo.name}`, {}, requestId);
       return { repo, owner: org.slug };
