@@ -512,6 +512,24 @@ export async function handleGithubGraphql(request: Request, ctx: Ctx): Promise<R
     const query = body.query ?? "";
     const variables = body.variables ?? {};
     if (!ctx.actor) return json({ errors: [{ message: "Requires authentication" }] }, 401);
+    if (query.includes("repository(owner:")) {
+      const owner = String(variables.owner ?? "");
+      const name = String(variables.name ?? "");
+      try {
+        const loaded = await ctx.services.requireRepo(ctx.actor, owner, name, "read");
+        return json({
+          data: { repository: graphqlRepo(ctx, owner, loaded.repo, loaded.actual) },
+        });
+      } catch (error) {
+        if (error instanceof ForgeError && error.status === 404) {
+          return json({
+            data: { repository: null },
+            errors: [{ type: "NOT_FOUND", message: error.message }],
+          });
+        }
+        throw error;
+      }
+    }
     if (query.includes("createRepository")) {
       const input = (variables.input ?? variables) as {
         name?: string;
@@ -589,14 +607,10 @@ export async function handleGithubGraphql(request: Request, ctx: Ctx): Promise<R
         },
       );
       return json({
-        data: {
-          mergePullRequest: {
-            pullRequest: graphqlPr(ctx, parsed.owner, parsed.name, result.pr, ctx.actor.login),
-          },
-        },
+        data: { mergePullRequest: { clientMutationId: result.sha } },
       });
     }
-    if (query.includes("viewer") && !query.includes("mutation")) {
+    if (/\bviewer\s*\{/.test(query) && !query.includes("mutation")) {
       const row = await ctx.services.store.getUser(ctx.actor.userId);
       return json({
         data: {
@@ -629,17 +643,38 @@ export async function handleGithubGraphql(request: Request, ctx: Ctx): Promise<R
         { state, body: input.body },
       );
       return json({
-        data: {
-          addPullRequestReview: {
-            pullRequestReview: { id: result.review.id, state: event, body: result.review.body },
-          },
-        },
+        data: { addPullRequestReview: { clientMutationId: result.review.id } },
       });
     }
     return json({ data: {}, errors: [{ message: "Unsupported GraphQL operation" }] }, 400);
   } catch (error) {
     return failure(error);
   }
+}
+
+function graphqlRepo(ctx: Ctx, owner: string, repo: Repository, permission: string) {
+  const viewerPermission =
+    permission === "admin"
+      ? "ADMIN"
+      : permission === "write"
+        ? "WRITE"
+        : permission === "read"
+          ? "READ"
+          : "NONE";
+  return {
+    id: repoNodeId(owner, repo.name),
+    name: repo.name,
+    owner: { login: owner },
+    description: repo.description,
+    url: `${ctx.origin}/${owner}/${repo.name}`,
+    hasIssuesEnabled: false,
+    hasWikiEnabled: false,
+    viewerPermission,
+    defaultBranchRef: { name: repo.defaultBranch },
+    mergeCommitAllowed: false,
+    rebaseMergeAllowed: false,
+    squashMergeAllowed: true,
+  };
 }
 
 function graphqlPr(ctx: Ctx, owner: string, name: string, pr: PullRequest, login: string) {

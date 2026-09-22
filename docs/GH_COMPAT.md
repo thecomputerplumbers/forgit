@@ -53,7 +53,7 @@ POST   /api/v3/repos/{owner}/{repo}/hooks
 
 ## GraphQL
 
-`viewer { login }` for `gh auth status`, plus `createPullRequest`, `addPullRequestReview`, and `mergePullRequest`.
+`viewer { login }` for `gh auth status`. `repository(owner, name)` for the fields `gh pr create` loads before opening a pull request. Mutations: `createRepository`, `createPullRequest`, `addPullRequestReview`, and `mergePullRequest`. Review and merge responses are only `clientMutationId`, which is the field those mutations select.
 
 `GET /api/v3` and `GET /api/v3/` return 200 and `X-OAuth-Scopes`. `gh auth status` requests the path without a trailing slash and treats any other status as an invalid token.
 

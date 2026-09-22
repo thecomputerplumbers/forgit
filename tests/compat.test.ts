@@ -108,6 +108,32 @@ describe("github rest and graphql", () => {
     };
     assert.equal(createdBody.data.createRepository.repository.name, "other");
     assert.equal(createdBody.data.createRepository.repository.owner.login, "acme");
+    const info = await handleGithubGraphql(
+      new Request("https://git.example.com/api/graphql", {
+        method: "POST",
+        body: JSON.stringify({
+          query: `query RepositoryInfo($owner: String!, $name: String!) {
+            repository(owner: $owner, name: $name) {
+              id
+              name
+              viewerPermission
+              defaultBranchRef { name }
+              squashMergeAllowed
+            }
+          }`,
+          variables: { owner: "acme", name: "other" },
+        }),
+      }),
+      ctx,
+    );
+    const infoBody = (await info?.json()) as {
+      data: {
+        repository: { id: string; viewerPermission: string; squashMergeAllowed: boolean };
+      };
+    };
+    assert.equal(infoBody.data.repository.viewerPermission, "ADMIN");
+    assert.equal(infoBody.data.repository.squashMergeAllowed, true);
+    assert.equal(infoBody.data.repository.id, repoNodeId("acme", "other"));
   });
 
   it("creates a pull request through the GraphQL mutation gh uses", async () => {
