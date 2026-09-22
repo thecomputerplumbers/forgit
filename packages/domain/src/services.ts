@@ -21,7 +21,12 @@ export type Services = ReturnType<typeof createServices>;
 
 const REF_NAME = /^[A-Za-z0-9][A-Za-z0-9._/-]{0,200}$/;
 
-export function createServices(store: ForgeStore, git: GitClient, origin: string) {
+export function createServices(
+  store: ForgeStore,
+  git: GitClient,
+  origin: string,
+  requestId: string | null = null,
+) {
   const publicOrigin = origin.replace(/\/$/, "");
 
   async function level(
@@ -81,7 +86,7 @@ export function createServices(store: ForgeStore, git: GitClient, origin: string
     repositoryId: string | null,
     target: string,
     metadata: Record<string, string | number | boolean | null> = {},
-    requestId: string | null = null,
+    eventRequestId: string | null = null,
   ) {
     await store.insertAudit({
       id: crypto.randomUUID(),
@@ -90,7 +95,7 @@ export function createServices(store: ForgeStore, git: GitClient, origin: string
       repositoryId,
       target,
       metadata,
-      requestId,
+      requestId: eventRequestId ?? requestId,
       createdAt: store.now(),
     });
   }

@@ -53,7 +53,9 @@ export default {
       ) {
         return api(request, env, requestId, ctx);
       }
-      return vinextWorker.fetch(request, env, ctx);
+      const pageHeaders = new Headers(request.headers);
+      pageHeaders.set("x-request-id", requestId);
+      return vinextWorker.fetch(new Request(request, { headers: pageHeaders }), env, ctx);
     } catch (error) {
       logEvent("request.error", {
         requestId,
@@ -74,9 +76,9 @@ async function api(
   requestId: string,
   ctx: ExecutionContext,
 ) {
-  const directory = getServices("directory");
+  const directory = getServices("directory", requestId);
   const actor = await directory.actorFromAuthorization(request.headers.get("authorization"));
-  const services = getServices(actor?.login ?? "anonymous");
+  const services = getServices(actor?.login ?? "anonymous", requestId);
   const key = `api:${actor?.userId ?? request.headers.get("cf-connecting-ip") ?? "anon"}`;
   const rate = await services.store.takeRate(key, services.store.now(), 60_000, actor ? 300 : 30);
   if (!rate.ok) return json({ message: "Rate limit exceeded" }, 429, requestId);
@@ -101,7 +103,7 @@ async function proxyGit(
   classified: Extract<Classified, { kind: "git" }>,
   requestId: string,
 ) {
-  const services = getServices("git");
+  const services = getServices("git", requestId);
   let write = classified.write;
   let body: BodyInit | null = request.body;
   if (request.method === "POST" && classified.suffix.startsWith("/info/lfs")) {

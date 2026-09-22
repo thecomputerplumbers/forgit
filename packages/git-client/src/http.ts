@@ -5,6 +5,7 @@ export type HttpGitOptions = {
   serviceToken: string;
   mergeToken: string;
   principal: string;
+  requestId?: string | null;
   fetch?: typeof fetch;
 };
 
@@ -40,7 +41,17 @@ export class HttpGitClient implements GitClient {
     // drops admin: walgit grants it to the forwarded name only when that name
     // is itself an admin token.
     if (!asService) headers.set("x-walgit-principal", this.options.principal);
+    if (this.options.requestId) headers.set("x-request-id", this.options.requestId);
     if (json) headers.set("content-type", "application/json");
+    return headers;
+  }
+
+  private mergeHeaders(): Headers {
+    const headers = new Headers({
+      authorization: `Bearer ${this.options.mergeToken}`,
+      "content-type": "application/json",
+    });
+    if (this.options.requestId) headers.set("x-request-id", this.options.requestId);
     return headers;
   }
 
@@ -221,10 +232,7 @@ export class HttpGitClient implements GitClient {
   async compare(owner: string, name: string, base: string, head: string) {
     const response = await this.fetch(`${this.baseUrl}/_forgit/compare`, {
       method: "POST",
-      headers: {
-        authorization: `Bearer ${this.options.mergeToken}`,
-        "content-type": "application/json",
-      },
+      headers: this.mergeHeaders(),
       body: JSON.stringify({ owner, repo: name, base, head }),
     });
     if (response.status === 404) return null;
@@ -235,10 +243,7 @@ export class HttpGitClient implements GitClient {
   async squashMerge(input: SquashMergeInput): Promise<{ sha: string }> {
     const response = await this.fetch(`${this.baseUrl}/_forgit/merge`, {
       method: "POST",
-      headers: {
-        authorization: `Bearer ${this.options.mergeToken}`,
-        "content-type": "application/json",
-      },
+      headers: this.mergeHeaders(),
       body: JSON.stringify({
         owner: input.owner,
         repo: input.repo,
@@ -292,10 +297,7 @@ export class HttpGitClient implements GitClient {
   private async helper(path: string, body: unknown): Promise<Record<string, unknown>> {
     const response = await this.fetch(`${this.baseUrl}${path}`, {
       method: "POST",
-      headers: {
-        authorization: `Bearer ${this.options.mergeToken}`,
-        "content-type": "application/json",
-      },
+      headers: this.mergeHeaders(),
       body: JSON.stringify(body),
     });
     if (!response.ok) throw new GitError(await readError(response), response.status);

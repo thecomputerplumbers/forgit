@@ -26,4 +26,22 @@ describe("repository creation", () => {
     );
     assert.equal(await store.getRepositoryByName("org", "widget"), null);
   });
+
+  it("stamps audit events with the request id", async () => {
+    const store = new MemoryStore();
+    store.seedUser(
+      { id: "alice", name: "Alice", email: "alice@example.com", login: "alice" },
+      { id: "org", name: "Acme", slug: "acme", role: "owner" },
+    );
+    const services = createServices(
+      store,
+      new MemoryGit("https://git.example.com"),
+      "https://git.example.com",
+      "req-123",
+    );
+    const alice = await services.actorFromUser("alice");
+    await services.createRepository(alice, { owner: "acme", name: "widget" });
+    assert.equal(store.audit.at(-1)?.requestId, "req-123");
+    assert.equal(store.audit.at(-1)?.action, "repo.create");
+  });
 });

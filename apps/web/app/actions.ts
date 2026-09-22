@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { ForgeError } from "@forgit/domain";
@@ -147,7 +148,7 @@ export async function memberAction(formData: FormData) {
     repositoryId: repo.id,
     target: user.login,
     metadata: { role },
-    requestId: null,
+    requestId: (await headers()).get("x-request-id"),
     createdAt: services.store.now(),
   });
   redirect(`/${owner}/${name}/settings`);

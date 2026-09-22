@@ -14,7 +14,8 @@ export async function requireForge(): Promise<{
 }> {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/sign-in");
-  const services = getServices(session.user.email);
+  const requestId = (await headers()).get("x-request-id");
+  const services = getServices(session.user.email, requestId);
   const actor = await actorForUser(services, session.user.id);
   const user = await services.store.getUser(session.user.id);
   if (!user) redirect("/sign-in");

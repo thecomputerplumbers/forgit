@@ -3,7 +3,7 @@ import { createSqlStore, d1Sql } from "@forgit/db/sql-store";
 import { createServices, type Actor, type Services } from "@forgit/domain";
 import { HttpGitClient } from "@forgit/git-client";
 
-export function getServices(principal: string): Services {
+export function getServices(principal: string, requestId?: string | null): Services {
   const origin = new URL(env.APP_URL).origin;
   const store = createSqlStore(d1Sql(env.DB));
   const git = new HttpGitClient({
@@ -11,9 +11,10 @@ export function getServices(principal: string): Services {
     serviceToken: env.WALGIT_TOKEN_FORGIT,
     mergeToken: env.MERGE_INTERNAL_TOKEN,
     principal,
+    requestId,
     fetch: env.WALGIT_URL ? undefined : containerFetch(),
   });
-  return createServices(store, git, origin);
+  return createServices(store, git, origin, requestId ?? null);
 }
 
 function containerFetch(): typeof fetch {

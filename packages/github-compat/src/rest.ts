@@ -772,6 +772,7 @@ async function ownerSlug(ctx: Ctx, ownerId: string): Promise<string | null> {
   const org = ownerId.match(/^forgit:org:([^/]+)$/);
   if (org?.[1]) return org[1];
   if (ownerId.startsWith("forgit:user:") || ownerId === "") {
+    if (!ctx.actor) return null;
     const orgs = await ctx.services.store.listOrganizationsForUser(ctx.actor.userId);
     return orgs[0]?.slug ?? null;
   }
