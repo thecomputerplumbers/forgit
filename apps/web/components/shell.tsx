@@ -39,7 +39,7 @@ export function RepoNav({
 }) {
   const links = [
     ["Code", `/${owner}/${name}`],
-    ["Commits", `/${owner}/${name}/commits/main`],
+    ["Commits", `/${owner}/${name}/commits`],
     ["Branches", `/${owner}/${name}/branches`],
     ["Tags", `/${owner}/${name}/tags`],
     ["Pulls", `/${owner}/${name}/pulls`],

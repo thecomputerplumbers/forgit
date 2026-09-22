@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { RepoNav, Shell } from "@/components/shell";
 import { loadGit } from "@/lib/git-view";
+import { resolveSlug } from "@/lib/ref-path";
 import { requireOrganization } from "@/lib/session";
 
 export default async function BlobPage({
@@ -14,8 +15,13 @@ export default async function BlobPage({
   const { services, actor, user } = await requireOrganization();
   const loaded = await services.requireRepo(actor, owner, name, "read").catch(() => null);
   if (!loaded) notFound();
-  const ref = slug[0] ?? loaded.repo.defaultBranch;
-  const path = slug.slice(1).join("/");
+  const { ref, path } = await resolveSlug(
+    services.git,
+    owner,
+    name,
+    slug,
+    loaded.repo.defaultBranch,
+  );
   const listed = await loadGit(() => services.git.blob(owner, name, ref, path));
   if ("message" in listed) {
     const host = (await headers()).get("host") ?? owner;
