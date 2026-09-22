@@ -289,7 +289,7 @@ export class MemoryGit implements GitClient {
     return {
       baseSha: baseCommit.sha,
       headSha: headCommit.sha,
-      mergeable: true,
+      mergeable: mergesCleanly(repo, baseCommit, headCommit),
       files,
       patch: files.map((file) => file.patch).join("\n"),
     };
@@ -401,4 +401,44 @@ export class MemoryGit implements GitClient {
     });
     return { commitSha };
   }
+}
+
+function mergesCleanly(repo: Repo, base: Commit, head: Commit): boolean {
+  const ancestor = commonAncestor(repo, base, head);
+  if (!ancestor) return base.sha === head.sha;
+  const paths = new Set<string>([
+    ...ancestor.tree.keys(),
+    ...base.tree.keys(),
+    ...head.tree.keys(),
+  ]);
+  for (const path of paths) {
+    const origin = ancestor.tree.get(path);
+    const left = base.tree.get(path);
+    const right = head.tree.get(path);
+    if (left !== origin && right !== origin && left !== right) return false;
+  }
+  return true;
+}
+
+function commonAncestor(repo: Repo, left: Commit, right: Commit): Commit | null {
+  const leftSide = new Set<string>();
+  const queue = [left.sha];
+  while (queue.length > 0) {
+    const sha = queue.shift();
+    if (!sha || leftSide.has(sha)) continue;
+    leftSide.add(sha);
+    const commit = repo.commits.get(sha);
+    if (commit) queue.push(...commit.parents);
+  }
+  const seen = new Set<string>();
+  const fromRight = [right.sha];
+  while (fromRight.length > 0) {
+    const sha = fromRight.shift();
+    if (!sha || seen.has(sha)) continue;
+    if (leftSide.has(sha)) return repo.commits.get(sha) ?? null;
+    seen.add(sha);
+    const commit = repo.commits.get(sha);
+    if (commit) fromRight.push(...commit.parents);
+  }
+  return null;
 }

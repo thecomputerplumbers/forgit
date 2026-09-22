@@ -32,6 +32,7 @@ export default async function PullPage({
       ? synced
       : await loadGit(() => services.git.compare(owner, name, pull.baseSha, pull.headSha));
   const patch = "value" in compared ? (compared.value?.patch ?? "") : "";
+  const conflicts = "value" in compared && compared.value?.mergeable === false;
   const gitMessage = "message" in compared ? compared.message : null;
   const rules = await services.store.getRules(loaded.repo.id);
   const host = (await headers()).get("host") ?? owner;
@@ -53,6 +54,7 @@ export default async function PullPage({
       <RepoNav owner={owner} name={name} current="Pulls" />
       {error ? <p className="error">{error}</p> : null}
       {gitMessage ? <p className="error">{gitMessage}</p> : null}
+      {conflicts ? <p className="error">This pull request has conflicts.</p> : null}
       <div className="pad">
         <p>
           Approvals required: {rules.requiredApprovals}. Checks required:{" "}

@@ -161,7 +161,16 @@ def compare(payload):
             })
         base_sha = git(["rev-parse", base], cwd=work).stdout.strip()
         head_sha = git(["rev-parse", head], cwd=work).stdout.strip()
-        return {"baseSha": base_sha, "headSha": head_sha, "mergeable": True, "files": files, "patch": patch.stdout}
+        merged = git(["merge-tree", "--write-tree", base_sha, head_sha], cwd=work)
+        if merged.returncode not in (0, 1):
+            raise HelperError(merged.stderr.strip() or "merge check failed", 422)
+        return {
+            "baseSha": base_sha,
+            "headSha": head_sha,
+            "mergeable": merged.returncode == 0,
+            "files": files,
+            "patch": patch.stdout,
+        }
     finally:
         shutil.rmtree(work, ignore_errors=True)
 
