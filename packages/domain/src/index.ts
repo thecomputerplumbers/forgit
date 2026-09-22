@@ -19,6 +19,7 @@ export type {
   ReviewState,
   User,
   Webhook,
+  WebhookDelivery,
 } from "./types.ts";
 export type { ForgeStore } from "./store.ts";
 export { MemoryStore } from "./memory.ts";

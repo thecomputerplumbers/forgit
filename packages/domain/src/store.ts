@@ -13,6 +13,7 @@ import type {
   Review,
   User,
   Webhook,
+  WebhookDelivery,
 } from "./types.ts";
 
 export interface ForgeStore {
@@ -93,6 +94,7 @@ export interface ForgeStore {
   insertWebhook(hook: Webhook): Promise<void>;
   listWebhooks(repositoryId: string): Promise<Webhook[]>;
   deleteWebhook(id: string, repositoryId: string): Promise<boolean>;
+  insertWebhookDelivery(delivery: WebhookDelivery): Promise<void>;
 
   insertAudit(event: AuditEvent): Promise<void>;
   listAudit(repositoryId: string, limit: number): Promise<AuditEvent[]>;

@@ -129,6 +129,15 @@ export type Webhook = {
   createdAt: number;
 };
 
+export type WebhookDelivery = {
+  id: string;
+  webhookId: string;
+  event: string;
+  status: "delivered" | "failed";
+  attempts: number;
+  createdAt: number;
+};
+
 export type AuditEvent = {
   id: string;
   actorId: string | null;

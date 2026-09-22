@@ -20,6 +20,7 @@ import type {
   ReviewState,
   User,
   Webhook,
+  WebhookDelivery,
 } from "@forgit/domain";
 
 export type Sql = {
@@ -845,6 +846,20 @@ export function createSqlStore(sql: Sql): ForgeStore {
         repositoryId,
       ]);
       return result.changes > 0;
+    },
+
+    async insertWebhookDelivery(delivery: WebhookDelivery) {
+      await sql.run(
+        `INSERT INTO webhook_deliveries (id, webhook_id, event, status, attempts, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          delivery.id,
+          delivery.webhookId,
+          delivery.event,
+          delivery.status,
+          delivery.attempts,
+          delivery.createdAt,
+        ],
+      );
     },
 
     async insertAudit(event: AuditEvent) {

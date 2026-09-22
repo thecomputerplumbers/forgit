@@ -16,6 +16,7 @@ import type {
   Review,
   User,
   Webhook,
+  WebhookDelivery,
 } from "./types.ts";
 
 type UserRow = User & { organizationIds: string[] };
@@ -34,6 +35,7 @@ export class MemoryStore implements ForgeStore {
   annotations: Annotation[] = [];
   tokens: ApiToken[] = [];
   webhooks: Webhook[] = [];
+  deliveries: WebhookDelivery[] = [];
   audit: AuditEvent[] = [];
   rates = new Map<string, { count: number; windowStart: number }>();
   clock = Date.now();
@@ -389,6 +391,10 @@ export class MemoryStore implements ForgeStore {
       (row) => !(row.id === id && row.repositoryId === repositoryId),
     );
     return this.webhooks.length !== before;
+  }
+
+  async insertWebhookDelivery(delivery: WebhookDelivery) {
+    this.deliveries.push({ ...delivery });
   }
 
   async insertAudit(event: AuditEvent) {

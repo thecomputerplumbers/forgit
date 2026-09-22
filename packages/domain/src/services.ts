@@ -108,6 +108,8 @@ export function createServices(
         .map(async (hook) => {
           const body = JSON.stringify({ event, payload });
           const signature = await signBody(hook.secret, body);
+          const deliveryId = crypto.randomUUID();
+          let status: "delivered" | "failed" = "delivered";
           try {
             assertWebhookUrl(hook.url);
             const response = await fetch(hook.url, {
@@ -116,17 +118,28 @@ export function createServices(
               headers: {
                 "content-type": "application/json",
                 "x-forgit-event": event,
+                "x-forgit-delivery": deliveryId,
                 "x-forgit-signature": signature,
               },
               body,
             });
             if (!response.ok) throw new Error(`Webhook responded ${response.status}`);
           } catch (error) {
+            status = "failed";
             await audit(null, "webhook.delivery_failed", repositoryId, hook.id, {
               event,
+              delivery: deliveryId,
               error: error instanceof Error ? error.message : "delivery failed",
             });
           }
+          await store.insertWebhookDelivery({
+            id: deliveryId,
+            webhookId: hook.id,
+            event,
+            status,
+            attempts: 1,
+            createdAt: store.now(),
+          });
         }),
     );
   }

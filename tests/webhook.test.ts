@@ -4,6 +4,8 @@ import { describe, it } from "node:test";
 import { assertWebhookUrl, createServices, ForgeError, MemoryStore } from "@forgit/domain";
 import { MemoryGit } from "@forgit/git-client";
 
+import { world } from "./fixture.ts";
+
 describe("webhook urls", () => {
   it("accepts a public https endpoint and rejects local or credentialed targets", () => {
     assert.doesNotThrow(() => assertWebhookUrl("https://hooks.example.com/forgit"));
@@ -55,5 +57,39 @@ describe("webhook urls", () => {
       () => services.createWebhook(alice, "acme", "widget", { url: "https://127.0.0.1/hook" }),
       (error: unknown) => error instanceof ForgeError && error.status === 422,
     );
+  });
+
+  it("sends a stable delivery id and records the outcome", async () => {
+    const { services, git, alice, bob, store } = await world();
+    await services.createWebhook(alice, "acme", "widget", {
+      url: "https://hooks.example.com/forgit",
+    });
+    git.commitFiles({
+      owner: "acme",
+      repo: "widget",
+      branch: "feature",
+      message: "feature",
+      files: { "NOTE.md": "note\n" },
+    });
+    const seen: string[] = [];
+    const original = globalThis.fetch;
+    globalThis.fetch = async (_input, init) => {
+      seen.push(new Headers(init?.headers).get("x-forgit-delivery") ?? "");
+      return new Response(null, { status: 204 });
+    };
+    try {
+      await services.openPullRequest(bob, "acme", "widget", {
+        title: "Feature",
+        sourceRef: "feature",
+        targetRef: "main",
+      });
+    } finally {
+      globalThis.fetch = original;
+    }
+    assert.equal(seen.length, 1);
+    assert.match(seen[0] ?? "", /^[0-9a-f-]{36}$/);
+    assert.equal(store.deliveries[0]?.id, seen[0]);
+    assert.equal(store.deliveries[0]?.status, "delivered");
+    assert.equal(store.deliveries[0]?.event, "pull_request");
   });
 });
