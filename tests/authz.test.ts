@@ -1,0 +1,68 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import { ForgeError } from "@forgit/domain";
+import { classifyPath } from "@forgit/git-client";
+
+import { world } from "./fixture.ts";
+
+describe("authorization", () => {
+  it("rejects a token after revocation and a token scoped to another repository", async () => {
+    const { services, alice, cara, repo } = await world();
+    const minted = await services.createToken(alice, {
+      name: "laptop",
+      scopes: ["repo:read", "repo:write", "pull_request:read", "pull_request:write"],
+      repositoryIds: [repo.id],
+    });
+    const actor = await services.actorFromAuthorization(`Bearer ${minted.plaintext}`);
+    assert.equal(actor?.userId, "alice");
+    assert.equal(actor?.repositoryIds?.[0], repo.id);
+    await services.revokeToken(alice, minted.token.id);
+    assert.equal(await services.actorFromAuthorization(`token ${minted.plaintext}`), null);
+    const other = await services.createRepository(alice, { owner: "acme", name: "other" });
+    const narrowed = await services.createToken(alice, {
+      name: "one-repo",
+      scopes: ["repo:read"],
+      repositoryIds: [other.repo.id],
+    });
+    const narrowedActor = await services.actorFromAuthorization(
+      `Basic ${btoa(`git:${narrowed.plaintext}`)}`,
+    );
+    await assert.rejects(
+      () => services.requireRepo(narrowedActor, "acme", "widget", "read"),
+      (error: unknown) => error instanceof ForgeError && error.code === "forbidden",
+    );
+    await assert.rejects(
+      () => services.requireRepo(cara, "acme", "widget", "read"),
+      (error: unknown) => error instanceof ForgeError && error.code === "forbidden",
+    );
+  });
+
+  it("lets a public repository be read anonymously and still requires write to push", async () => {
+    const { services, alice } = await world();
+    await services.store.updateRepository(
+      (await services.store.getRepositoryByName("org", "widget"))?.id ?? "",
+      { visibility: "public" },
+    );
+    const found = await services.requireRepo(null, "acme", "widget", "read");
+    assert.equal(found.actual, "read");
+    await assert.rejects(() => services.requireRepo(null, "acme", "widget", "write"));
+    await assert.rejects(() => services.requireRepo(alice, "acme", "missing", "read"));
+  });
+});
+
+describe("git path classification", () => {
+  it("keeps application routes and traversal out of the git proxy", () => {
+    assert.equal(classifyPath("/acme/widget.git/info/refs", "GET").kind, "git");
+    assert.equal(classifyPath("/acme/widget.git/git-receive-pack", "POST").kind, "git");
+    const write = classifyPath("/acme/widget.git/git-receive-pack", "POST");
+    assert.equal(write.kind === "git" && write.write, true);
+    assert.equal(classifyPath("/acme/widget.git/git-upload-pack", "POST").kind, "git");
+    assert.equal(classifyPath("/api/v3/user", "GET").kind, "app");
+    assert.equal(classifyPath("/mcp", "POST").kind, "app");
+    assert.equal(classifyPath("/acme/widget", "GET").kind, "app");
+    assert.equal(classifyPath("/api/widget.git/info/refs", "GET").kind, "app");
+    assert.equal(classifyPath("/acme/..%2Fsecret.git/info/refs", "GET").kind, "app");
+    assert.equal(classifyPath("/healthz", "GET").kind, "health");
+  });
+});

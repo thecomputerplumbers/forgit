@@ -1,0 +1,24 @@
+{
+  "name": "@forgit/auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./scopes": "./src/scopes.ts",
+    "./crypto": "./src/crypto.ts",
+    "./rate": "./src/rate.ts",
+    "./schema": "./src/schema.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "better-auth": "^1.7.5",
+    "drizzle-orm": "1.0.0-rc.4"
+  },
+  "devDependencies": {
+    "@forgit/typescript-config": "workspace:*",
+    "typescript": "^7.0.2"
+  }
+}

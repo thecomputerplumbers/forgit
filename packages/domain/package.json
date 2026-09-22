@@ -1,0 +1,20 @@
+{
+  "name": "@forgit/domain",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@forgit/auth": "workspace:*",
+    "@forgit/git-client": "workspace:*"
+  },
+  "devDependencies": {
+    "@forgit/typescript-config": "workspace:*",
+    "typescript": "^7.0.2"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "@forgit/observability",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@forgit/typescript-config": "workspace:*",
+    "typescript": "^7.0.2"
+  }
+}

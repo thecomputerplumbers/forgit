@@ -1,0 +1,23 @@
+{
+  "name": "@forgit/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts",
+    "./sql-store": "./src/sql-store.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@forgit/auth": "workspace:*",
+    "@forgit/domain": "workspace:*",
+    "drizzle-orm": "1.0.0-rc.4"
+  },
+  "devDependencies": {
+    "@forgit/typescript-config": "workspace:*",
+    "typescript": "^7.0.2"
+  }
+}
