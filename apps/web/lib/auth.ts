@@ -1,5 +1,8 @@
 import { env } from "cloudflare:workers";
 import { createAuth, createAuthDb, lazyAuth, resolveSecret } from "@forgit/auth";
+import { recordAuthEvent } from "@forgit/domain";
+
+import { getServices } from "./forge.ts";
 
 export const auth = lazyAuth(() => {
   if (!env.APP_URL) throw new Error("APP_URL must be configured");
@@ -9,5 +12,8 @@ export const auth = lazyAuth(() => {
     secret: resolveSecret(env.BETTER_AUTH_SECRET, origin),
     baseURL: origin,
     trustedOrigins: [origin],
+    onAuthEvent: async (event) => {
+      await recordAuthEvent(getServices("auth").store, event);
+    },
   });
 });

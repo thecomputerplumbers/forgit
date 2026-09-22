@@ -22,6 +22,10 @@ export type CreateAuthOptions = {
     role: string;
     organization: { name: string };
   }) => Promise<void>;
+  onAuthEvent?: (event: {
+    action: "auth.sign_up" | "auth.sign_in";
+    userId: string;
+  }) => Promise<void>;
 };
 
 /**
@@ -57,6 +61,22 @@ export function createAuth(options: CreateAuthOptions) {
       customRules: {
         "/sign-in/email": { window: 60, max: 10 },
         "/sign-up/email": { window: 3600, max: 10 },
+      },
+    },
+    databaseHooks: {
+      user: {
+        create: {
+          after: async (user) => {
+            await options.onAuthEvent?.({ action: "auth.sign_up", userId: user.id });
+          },
+        },
+      },
+      session: {
+        create: {
+          after: async (session) => {
+            await options.onAuthEvent?.({ action: "auth.sign_in", userId: session.userId });
+          },
+        },
       },
     },
     plugins: [
