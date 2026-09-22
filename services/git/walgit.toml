@@ -5,6 +5,8 @@
 
 [server]
 listen = "127.0.0.1:8081"
+# Nginx speaks HTTP/1.1. The default is h2c, which this proxy does not.
+http2 = false
 public_url = "https://git.thecomputerplumbers.com"
 roles = ["serve", "maintain", "events"]
 auto_create_on_push = false

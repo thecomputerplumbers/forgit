@@ -27,6 +27,7 @@ describe("walgit http client", () => {
     await git.setProtectedBranch("acme", "widget", "main");
     await git.deleteRepository("acme", "widget");
     await git.summary("acme", "widget");
+    await git.tree("acme", "widget", "feature/login", "src/app.ts");
     assert.deepEqual(
       calls.map((call) => [call.method, new URL(call.url).pathname, call.principal]),
       [
@@ -34,6 +35,7 @@ describe("walgit http client", () => {
         ["PUT", "/acme/widget/api/policy", null],
         ["DELETE", "/acme/widget", null],
         ["GET", "/acme/widget/api", "ada"],
+        ["GET", "/acme/widget/api/tree/feature/login/src/app.ts", "ada"],
       ],
     );
   });

@@ -10,6 +10,14 @@ export type HttpGitOptions = {
 
 type Json = Record<string, unknown>;
 
+function gitPath(value: string): string {
+  return value
+    .split("/")
+    .filter((part) => part.length > 0)
+    .map((part) => encodeURIComponent(part))
+    .join("/");
+}
+
 async function readError(response: Response): Promise<string> {
   const text = await response.text();
   return text.slice(0, 500) || response.statusText;
@@ -110,10 +118,8 @@ export class HttpGitClient implements GitClient {
   }
 
   async tree(owner: string, name: string, ref: string, path: string) {
-    const suffix = path ? `/${path.split("/").map(encodeURIComponent).join("/")}` : "";
-    const body = await this.getJson<Json>(
-      `/${owner}/${name}/api/tree/${encodeURIComponent(ref)}${suffix}`,
-    );
+    const suffix = path ? `/${gitPath(path)}` : "";
+    const body = await this.getJson<Json>(`/${owner}/${name}/api/tree/${gitPath(ref)}${suffix}`);
     if (!body) return null;
     return {
       ref: String(body.ref ?? ref),
@@ -137,9 +143,8 @@ export class HttpGitClient implements GitClient {
   }
 
   async blob(owner: string, name: string, ref: string, path: string) {
-    const suffix = path.split("/").map(encodeURIComponent).join("/");
     const body = await this.getJson<Json>(
-      `/${owner}/${name}/api/blob/${encodeURIComponent(ref)}/${suffix}`,
+      `/${owner}/${name}/api/blob/${gitPath(ref)}/${gitPath(path)}`,
     );
     if (!body) return null;
     return {
@@ -209,9 +214,7 @@ export class HttpGitClient implements GitClient {
   }
 
   async resolve(owner: string, name: string, ref: string) {
-    const body = await this.getJson<Json>(
-      `/${owner}/${name}/api/resolve/${encodeURIComponent(ref)}`,
-    );
+    const body = await this.getJson<Json>(`/${owner}/${name}/api/resolve/${gitPath(ref)}`);
     return body ? String(body.sha) : null;
   }
 
