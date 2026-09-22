@@ -1,0 +1,44 @@
+# forgit's walgit config.
+# The bucket is authoritative. /var/lib/walgit is a disposable cache.
+# PORT is unset by the entrypoint so Cloudflare's container port does not
+# move walgit off 127.0.0.1:8081. Nginx owns the public container port.
+
+[server]
+listen = "127.0.0.1:8081"
+public_url = "https://git.thecomputerplumbers.com"
+roles = ["serve", "maintain", "events"]
+auto_create_on_push = false
+
+[server.tls]
+mode = "off"
+
+[server.auth]
+mode = "token"
+anonymous_read = false
+tokens = [{ principal = "forgit", token_env = "WALGIT_TOKEN_FORGIT", write = true }]
+trusted_forwarders = ["forgit"]
+
+[store]
+backend = "s3"
+bucket = "forgit-git"
+
+[store.s3]
+endpoint = "https://example.r2.cloudflarestorage.com"
+region = "auto"
+access_key_env = "AWS_ACCESS_KEY_ID"
+secret_key_env = "AWS_SECRET_ACCESS_KEY"
+force_path_style = true
+
+[cache]
+dir = "/var/lib/walgit"
+mode = "budget"
+max_bytes = "8GiB"
+
+[maintenance]
+interval = "60s"
+disk = "ssd"
+
+[telemetry]
+log_format = "json"
+log_filter = "info"
+metrics = true

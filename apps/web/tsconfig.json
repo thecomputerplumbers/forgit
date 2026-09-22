@@ -1,0 +1,9 @@
+{
+  "extends": "@forgit/typescript-config/nextjs.json",
+  "compilerOptions": {
+    "paths": { "@/*": ["./*"] },
+    "types": ["@cloudflare/workers-types"]
+  },
+  "include": ["next.config.ts", "**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules"]
+}

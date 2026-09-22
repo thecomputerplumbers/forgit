@@ -1,0 +1,40 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "forgit",
+  "main": "./worker/index.ts",
+  "compatibility_date": "2026-09-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "routes": [{ "pattern": "git.thecomputerplumbers.com", "custom_domain": true }],
+  "assets": {
+    "directory": "dist/client",
+    "not_found_handling": "none",
+    "binding": "ASSETS",
+  },
+  "vars": {
+    "APP_URL": "https://git.thecomputerplumbers.com",
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "forgit",
+      "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID",
+      "migrations_dir": "migrations",
+    },
+  ],
+  "containers": [
+    {
+      "class_name": "GitContainer",
+      "image": "../../services/git/Dockerfile",
+      "image_build_context": "../../services/git",
+      "max_instances": 1,
+      "instance_type": "standard-2",
+    },
+  ],
+  "durable_objects": {
+    "bindings": [{ "name": "GIT_CONTAINER", "class_name": "GitContainer" }],
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GitContainer"] }],
+  "observability": { "enabled": true, "head_sampling_rate": 1 },
+  "upload_source_maps": true,
+}

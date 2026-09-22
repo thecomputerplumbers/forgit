@@ -1,0 +1,45 @@
+{
+  "name": "web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vinext dev",
+    "build": "vinext build",
+    "start": "wrangler dev --config dist/server/wrangler.json",
+    "cf:typegen": "wrangler types --env-interface CloudflareEnv worker-env.d.ts",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local --config wrangler.jsonc",
+    "db:migrate": "wrangler d1 migrations apply DB --remote --config wrangler.jsonc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@cloudflare/containers": "^0.0.31",
+    "@forgit/auth": "workspace:*",
+    "@forgit/db": "workspace:*",
+    "@forgit/domain": "workspace:*",
+    "@forgit/git-client": "workspace:*",
+    "@forgit/github-compat": "workspace:*",
+    "@forgit/mcp": "workspace:*",
+    "@forgit/observability": "workspace:*",
+    "@vinext/cloudflare": "1.0.0-beta.8",
+    "better-auth": "^1.7.5",
+    "drizzle-orm": "1.0.0-rc.4",
+    "next": "16.3.5",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-server-dom-webpack": "19.3.0",
+    "vinext": "1.0.0-beta.10"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "1.56.0",
+    "@cloudflare/workers-types": "5.20260922.1",
+    "@forgit/typescript-config": "workspace:*",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "6.1.1",
+    "@vitejs/plugin-rsc": "0.5.35",
+    "typescript": "^7.0.2",
+    "vite": "8.3.0",
+    "wrangler": "4.135.0"
+  }
+}
