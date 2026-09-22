@@ -15,7 +15,7 @@ mode = "off"
 [server.auth]
 mode = "token"
 anonymous_read = false
-tokens = [{ principal = "forgit", token_env = "WALGIT_TOKEN_FORGIT", write = true }]
+tokens = [{ principal = "forgit", token_env = "WALGIT_TOKEN_FORGIT", write = true, admin = true }]
 trusted_forwarders = ["forgit"]
 
 [store]

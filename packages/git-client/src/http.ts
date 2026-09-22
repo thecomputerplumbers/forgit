@@ -24,18 +24,26 @@ export class HttpGitClient implements GitClient {
     this.fetch = options.fetch ?? fetch;
   }
 
-  private headers(json = false): Headers {
+  private headers(json = false, asService = false): Headers {
     const headers = new Headers({
       authorization: `Bearer ${this.options.serviceToken}`,
-      "x-walgit-principal": this.options.principal,
     });
+    // Create, delete, and policy are admin operations. Forwarding the end user
+    // drops admin: walgit grants it to the forwarded name only when that name
+    // is itself an admin token.
+    if (!asService) headers.set("x-walgit-principal", this.options.principal);
     if (json) headers.set("content-type", "application/json");
     return headers;
   }
 
-  private async send(path: string, init: RequestInit = {}, json = false): Promise<Response> {
+  private async send(
+    path: string,
+    init: RequestInit = {},
+    json = false,
+    asService = false,
+  ): Promise<Response> {
     const headers = new Headers(init.headers);
-    for (const [key, value] of this.headers(json)) headers.set(key, value);
+    for (const [key, value] of this.headers(json, asService)) headers.set(key, value);
     return this.fetch(`${this.baseUrl}${path}`, { ...init, headers });
   }
 
@@ -47,13 +55,13 @@ export class HttpGitClient implements GitClient {
   }
 
   async createRepository(owner: string, name: string): Promise<void> {
-    const response = await this.send(`/${owner}/${name}`, { method: "PUT" });
+    const response = await this.send(`/${owner}/${name}`, { method: "PUT" }, false, true);
     if (response.status === 200 || response.status === 201) return;
     throw new GitError(await readError(response), response.status);
   }
 
   async deleteRepository(owner: string, name: string): Promise<void> {
-    const response = await this.send(`/${owner}/${name}`, { method: "DELETE" });
+    const response = await this.send(`/${owner}/${name}`, { method: "DELETE" }, false, true);
     if (response.status === 200 || response.status === 204 || response.status === 404) return;
     throw new GitError(await readError(response), response.status);
   }
@@ -76,11 +84,12 @@ export class HttpGitClient implements GitClient {
       ],
     };
     const response = await this.send(
-      `/${owner}/${name}/policy`,
+      `/${owner}/${name}/api/policy`,
       {
         method: "PUT",
         body: JSON.stringify(policy),
       },
+      true,
       true,
     );
     if (!response.ok) throw new GitError(await readError(response), response.status);
