@@ -66,7 +66,7 @@ Or use the token as the HTTP password with username `git`.
 ## Health
 
 - `GET /healthz` answers for the worker.
-- `GET /readyz` checks D1 and walgit's `/readyz`.
+- `GET /readyz` checks D1, walgit's `/readyz`, and a bucket read (`GET /api/v1/owners`). walgit can be up while R2 credentials are wrong; `store` is the check that tells those apart.
 - Replacing the container drops the local cache only. Clone the same repository again to prove R2 still has it.
 
 ## What this is not

@@ -211,20 +211,34 @@ async function upstream(env: Cloudflare.Env, request: Request): Promise<Response
 }
 
 async function ready(env: Cloudflare.Env, requestId: string) {
-  const checks: Record<string, string> = { database: "fail", git: "fail" };
+  const checks: Record<string, string> = { database: "fail", git: "fail", store: "fail" };
   try {
     await env.DB.prepare("SELECT 1 AS ok").first();
     checks.database = "ok";
   } catch {
     checks.database = "fail";
   }
+  // Missing R2 keys must not boot the container. walgit's own /readyz only
+  // means the process is up; listing owners is what touches the bucket.
+  if (!gitStorageReady(env)) return json({ ok: false, checks, requestId }, 503);
   try {
     const response = await upstream(env, new Request("http://git.internal/readyz"));
     checks.git = response.ok ? "ok" : "fail";
   } catch {
     checks.git = "fail";
   }
-  const ok = checks.database === "ok" && checks.git === "ok";
+  if (checks.git === "ok") {
+    try {
+      const probe = new Request("http://git.internal/api/v1/owners", {
+        headers: { authorization: `Bearer ${env.WALGIT_TOKEN_FORGIT}` },
+      });
+      const response = await upstream(env, probe);
+      checks.store = response.ok ? "ok" : "fail";
+    } catch {
+      checks.store = "fail";
+    }
+  }
+  const ok = checks.database === "ok" && checks.git === "ok" && checks.store === "ok";
   return json({ ok, checks, requestId }, ok ? 200 : 503);
 }
 
