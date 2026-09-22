@@ -6,10 +6,12 @@ set -eu
 : "${GH_ENTERPRISE_TOKEN:?set GH_ENTERPRISE_TOKEN}"
 owner="${FORGIT_OWNER:-acme}"
 repo="gh-smoke-$(date +%s)"
+gh="${GH_BIN:-gh}"
 export GH_HOST GH_ENTERPRISE_TOKEN
-gh auth status --hostname "$GH_HOST"
-gh repo create "$owner/$repo" --private --description "compatibility smoke"
-gh repo view "$owner/$repo"
+"$gh" --version
+"$gh" auth status --hostname "$GH_HOST"
+"$gh" repo create "$owner/$repo" --private --description "compatibility smoke"
+"$gh" repo view "$owner/$repo"
 workdir=$(mktemp -d)
 git -C "$workdir" init --initial-branch=main repo
 cd "$workdir/repo"
@@ -27,9 +29,9 @@ git add NOTE.md
 git commit -m "smoke"
 git -c "http.extraHeader=${auth}" push "$url" feature
 git -c "http.extraHeader=${auth}" remote add origin "$url"
-gh pr create --title "Smoke" --body "compatibility" --base main --head feature
-number=$(gh pr list --json number --jq '.[0].number')
-gh pr view "$number"
-gh pr diff "$number"
+"$gh" pr create --title "Smoke" --body "compatibility" --base main --head feature
+number=$("$gh" pr list --json number --jq '.[0].number')
+"$gh" pr view "$number"
+"$gh" pr diff "$number"
 echo "gh smoke created ${owner}/${repo}#${number}"
 echo "Approve with a second user, then: gh pr merge ${number} --squash"

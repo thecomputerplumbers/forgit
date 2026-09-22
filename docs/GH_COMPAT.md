@@ -76,4 +76,6 @@ forgit:pr:{owner}/{name}/{number}
 
 ## Proof
 
-`pnpm test` exercises the REST, GraphQL, and MCP handlers in-process. `tests/gh/run.sh` drives an unmodified `gh` against a live host when `GH_HOST` and `GH_ENTERPRISE_TOKEN` are set. Pin the `gh` version you care about in that environment; the suite does not vendor a binary.
+Supported `gh` releases are `2.100.0` and `2.87.0`, listed in `tests/gh/versions.txt`. The suite does not vendor binaries.
+
+`pnpm test` exercises the REST, GraphQL, and MCP handlers in-process. `tests/gh/auth-matrix.sh` runs `gh auth status` for each installed release. `tests/gh/run.sh` drives the rest of the command matrix against a live host when `GH_HOST` and `GH_ENTERPRISE_TOKEN` are set. Set `GH_BIN` to choose the binary.
