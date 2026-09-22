@@ -9,6 +9,15 @@ import {
 
 type Ctx = { services: Services; actor: Actor | null; origin: string };
 
+function githubScopes(actor: Actor | null): string {
+  const scopes = actor?.tokenScopes;
+  if (!scopes) return "repo, read:org, read:user";
+  const names: string[] = [];
+  if (scopes.some((scope) => scope.startsWith("repo:"))) names.push("repo");
+  if (scopes.includes("user:read")) names.push("read:org", "read:user");
+  return names.join(", ");
+}
+
 function json(body: unknown, status = 200, extra?: HeadersInit): Response {
   const headers = new Headers(extra);
   headers.set("content-type", "application/json; charset=utf-8");
@@ -100,8 +109,8 @@ async function authorLogin(ctx: Ctx, userId: string) {
 
 export async function handleGithubRest(request: Request, ctx: Ctx): Promise<Response | null> {
   const url = new URL(request.url);
-  if (!url.pathname.startsWith("/api/v3/")) return null;
-  const path = url.pathname.slice("/api/v3".length);
+  if (url.pathname !== "/api/v3" && !url.pathname.startsWith("/api/v3/")) return null;
+  const path = url.pathname === "/api/v3" ? "/" : url.pathname.slice("/api/v3".length) || "/";
   try {
     const response = await route(request.method, path, url, request, ctx);
     return response ?? json({ message: "Not Found" }, 404);
@@ -122,6 +131,17 @@ async function route(
   request: Request,
   ctx: Ctx,
 ): Promise<Response | null> {
+  if (method === "GET" && (path === "/" || path === "")) {
+    return json(
+      {
+        current_user_url: `${ctx.origin}/api/v3/user`,
+        repository_url: `${ctx.origin}/api/v3/repos/{owner}/{repo}`,
+      },
+      200,
+      { "X-OAuth-Scopes": githubScopes(ctx.actor) },
+    );
+  }
+
   if (method === "GET" && path === "/user") {
     const actor = await requireActor(ctx);
     const row = await ctx.services.store.getUser(actor.userId);
@@ -520,6 +540,17 @@ export async function handleGithubGraphql(request: Request, ctx: Ctx): Promise<R
         data: {
           mergePullRequest: {
             pullRequest: graphqlPr(ctx, parsed.owner, parsed.name, result.pr, ctx.actor.login),
+          },
+        },
+      });
+    }
+    if (query.includes("viewer") && !query.includes("mutation")) {
+      const row = await ctx.services.store.getUser(ctx.actor.userId);
+      return json({
+        data: {
+          viewer: {
+            login: row?.login ?? ctx.actor.login,
+            id: row?.id ?? ctx.actor.userId,
           },
         },
       });

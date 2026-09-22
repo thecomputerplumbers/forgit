@@ -66,6 +66,23 @@ describe("github rest and graphql", () => {
     assert.equal(rebase?.status, 422);
   });
 
+  it("answers the calls gh auth status makes", async () => {
+    const { services, alice } = await world();
+    const ctx = { services, actor: alice, origin: services.origin };
+    const root = await handleGithubRest(new Request("https://git.example.com/api/v3/"), ctx);
+    assert.equal(root?.status, 200);
+    assert.match(root?.headers.get("X-OAuth-Scopes") ?? "", /repo/);
+    const viewer = await handleGithubGraphql(
+      new Request("https://git.example.com/api/graphql", {
+        method: "POST",
+        body: JSON.stringify({ query: "query UserCurrent { viewer { login } }" }),
+      }),
+      ctx,
+    );
+    const body = (await viewer?.json()) as { data: { viewer: { login: string } } };
+    assert.equal(body.data.viewer.login, "alice");
+  });
+
   it("creates a pull request through the GraphQL mutation gh uses", async () => {
     const { services, git, bob } = await world();
     git.commitFiles({

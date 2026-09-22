@@ -53,7 +53,9 @@ POST   /api/v3/repos/{owner}/{repo}/hooks
 
 ## GraphQL
 
-`createPullRequest`, `addPullRequestReview`, `mergePullRequest`.
+`viewer { login }` for `gh auth status`, plus `createPullRequest`, `addPullRequestReview`, and `mergePullRequest`.
+
+`GET /api/v3/` returns 200 and `X-OAuth-Scopes`. `gh auth status` treats any other status as an invalid token.
 
 Node ids:
 
