@@ -10,6 +10,21 @@ import { getServices } from "../lib/forge.ts";
 export class GitContainer extends Container<Cloudflare.Env> {
   defaultPort = 8080;
   sleepAfter = "60m";
+
+  constructor(ctx: ConstructorParameters<typeof Container>[0], env: Cloudflare.Env) {
+    super(ctx, env);
+    // Read at start, before onStart. Missing R2 keys are omitted so a
+    // half-configured boot does not overwrite a later secret with "".
+    const vars: Record<string, string> = {
+      WALGIT__SERVER__PUBLIC_URL: env.APP_URL,
+    };
+    if (env.WALGIT_TOKEN_FORGIT) vars.WALGIT_TOKEN_FORGIT = env.WALGIT_TOKEN_FORGIT;
+    if (env.MERGE_INTERNAL_TOKEN) vars.MERGE_INTERNAL_TOKEN = env.MERGE_INTERNAL_TOKEN;
+    if (env.R2_ENDPOINT) vars.WALGIT__STORE__S3__ENDPOINT = env.R2_ENDPOINT;
+    if (env.R2_ACCESS_KEY_ID) vars.AWS_ACCESS_KEY_ID = env.R2_ACCESS_KEY_ID;
+    if (env.R2_SECRET_ACCESS_KEY) vars.AWS_SECRET_ACCESS_KEY = env.R2_SECRET_ACCESS_KEY;
+    this.envVars = vars;
+  }
 }
 
 const READ_LIMIT = { windowMs: 60_000, max: 120 };

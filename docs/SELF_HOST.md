@@ -8,17 +8,21 @@ Git data is in a private R2 bucket. Collaboration metadata is in D1. The worker 
 
 ```sh
 wrangler login
+# Use the account that owns the hostname. This repo targets The Computer Plumbers.
+export CLOUDFLARE_ACCOUNT_ID=865d0c927a18e87c0a0701b8d1f18ee9
 wrangler r2 bucket create forgit-git
 wrangler d1 create forgit
 ```
 
-Paste the D1 database id into `apps/web/wrangler.jsonc` (`database_id`). Create an R2 API token that can read and write `forgit-git`, and set the S3 endpoint in `services/git/walgit.toml` (`[store.s3].endpoint` looks like `https://<accountid>.r2.cloudflarestorage.com`).
+The Computer Plumbers account already has D1 `forgit` (`90f47568-e7c5-4802-b9ce-fa7c08d493ed`) and R2 bucket `forgit-git`. Those ids are in `apps/web/wrangler.jsonc`. A different account replaces `account_id`, `database_id`, the route, `APP_URL`, and `R2_ENDPOINT`.
 
-Override the public URL for another hostname with `WALGIT__SERVER__PUBLIC_URL` and `APP_URL`.
+`R2_ENDPOINT` is `https://<accountid>.r2.cloudflarestorage.com`. The worker copies it into the container as `WALGIT__STORE__S3__ENDPOINT`, which overrides `[store.s3].endpoint` in `walgit.toml`.
+
+Create an R2 API token in the dashboard (R2 → Manage API tokens → Object Read & Write, bucket `forgit-git` only). Copy the Access Key ID and Secret Access Key once. The Wrangler OAuth token can create the bucket, and it cannot mint those S3 keys.
 
 ## Secrets
 
-Generate two long random values. The same `WALGIT_TOKEN_FORGIT` must be present in the worker and the container. `MERGE_INTERNAL_TOKEN` too. `BETTER_AUTH_SECRET` is only the worker.
+Generate three long random values. `BETTER_AUTH_SECRET` stays on the worker. `WALGIT_TOKEN_FORGIT` and `MERGE_INTERNAL_TOKEN` are copied into the container at start. The R2 key pair comes from the dashboard token above.
 
 ```sh
 openssl rand -hex 32
@@ -29,9 +33,11 @@ cd apps/web
 printf '%s' "$BETTER_AUTH_SECRET" | wrangler secret put BETTER_AUTH_SECRET
 printf '%s' "$WALGIT_TOKEN_FORGIT" | wrangler secret put WALGIT_TOKEN_FORGIT
 printf '%s' "$MERGE_INTERNAL_TOKEN" | wrangler secret put MERGE_INTERNAL_TOKEN
+printf '%s' "$R2_ACCESS_KEY_ID" | wrangler secret put R2_ACCESS_KEY_ID
+printf '%s' "$R2_SECRET_ACCESS_KEY" | wrangler secret put R2_SECRET_ACCESS_KEY
 ```
 
-Pass `WALGIT_TOKEN_FORGIT`, `MERGE_INTERNAL_TOKEN`, `AWS_ACCESS_KEY_ID`, and `AWS_SECRET_ACCESS_KEY` into the container environment as well. Those are the credentials walgit uses for R2. The worker never talks to R2 directly.
+`GitContainer` copies those secrets into the container when it starts: `WALGIT_TOKEN_FORGIT`, `MERGE_INTERNAL_TOKEN`, and the R2 pair as `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`. The worker never talks to R2. Changing a secret requires a new container start before walgit sees it.
 
 Attach the hostname `git.thecomputerplumbers.com` to this worker (the wrangler route is already a custom domain).
 

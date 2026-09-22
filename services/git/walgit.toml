@@ -23,7 +23,8 @@ backend = "s3"
 bucket = "forgit-git"
 
 [store.s3]
-endpoint = "https://example.r2.cloudflarestorage.com"
+# Overridden at runtime by WALGIT__STORE__S3__ENDPOINT (worker var R2_ENDPOINT).
+endpoint = "https://865d0c927a18e87c0a0701b8d1f18ee9.r2.cloudflarestorage.com"
 region = "auto"
 access_key_env = "AWS_ACCESS_KEY_ID"
 secret_key_env = "AWS_SECRET_ACCESS_KEY"

@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "forgit",
+  "account_id": "865d0c927a18e87c0a0701b8d1f18ee9",
   "main": "./worker/index.ts",
   "compatibility_date": "2026-09-21",
   "compatibility_flags": ["nodejs_compat"],
@@ -13,12 +14,13 @@
   },
   "vars": {
     "APP_URL": "https://git.thecomputerplumbers.com",
+    "R2_ENDPOINT": "https://865d0c927a18e87c0a0701b8d1f18ee9.r2.cloudflarestorage.com",
   },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "forgit",
-      "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID",
+      "database_id": "90f47568-e7c5-4802-b9ce-fa7c08d493ed",
       "migrations_dir": "migrations",
     },
   ],
