@@ -46,4 +46,15 @@ See [docs/SELF_HOST.md](docs/SELF_HOST.md). Decisions that closed the plan's ope
 
 ## License
 
-MIT.
+Forgit is dual-licensed. Choose either:
+
+- **AGPL-3.0-or-later**, in [LICENSE](LICENSE), for the complete open-source
+  version; or
+- the **Forgit Commercial License**, currently **$99 per legal entity per
+  year**, for the same code without the AGPL source-sharing requirements.
+
+The commercial license has no seat, repository, server, or installation limits,
+and versions received during an active subscription remain licensed after the
+subscription ends. See [Licensing Forgit](docs/LICENSING.md) for the plain-language
+guide and [LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md) for the commercial
+terms.
