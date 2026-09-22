@@ -153,6 +153,24 @@ const RESERVED = new Set([
   "repos.js",
 ]);
 
+/** True when this Git route stores objects. LFS batch uploads are decided from the body. */
+export function gitWrite(method: string, suffix: string): boolean {
+  if (method === "POST" && suffix === "/git-receive-pack") return true;
+  if (method === "PUT" && suffix.startsWith("/info/lfs/objects/")) return true;
+  if (method === "POST" && suffix === "/info/lfs/verify") return true;
+  return false;
+}
+
+/** Upload batches must be gated before they are proxied. Invalid JSON fails closed. */
+export function lfsBatchWrites(body: string): boolean {
+  try {
+    const parsed = JSON.parse(body) as { operation?: unknown };
+    return parsed.operation === "upload";
+  } catch {
+    return true;
+  }
+}
+
 export type Classified =
   | { kind: "git"; owner: string; repo: string; write: boolean; suffix: string }
   | { kind: "health" }
@@ -173,8 +191,7 @@ export function classifyPath(pathname: string, method: string): Classified {
   const suffix = match[3] ?? "";
   if (RESERVED.has(owner) || !NAME.test(owner) || !NAME.test(repo)) return { kind: "app" };
   if (owner.includes("..") || repo.includes("..")) return { kind: "app" };
-  const write =
-    method === "POST" && (suffix === "/git-receive-pack" || suffix.startsWith("/info/lfs"));
+  const write = gitWrite(method, suffix);
   const allowed =
     suffix === "" ||
     suffix === "/info/refs" ||

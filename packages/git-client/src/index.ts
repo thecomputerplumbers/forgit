@@ -1,4 +1,4 @@
-export { GitError, assertRepoName, classifyPath } from "./types.ts";
+export { GitError, assertRepoName, classifyPath, gitWrite, lfsBatchWrites } from "./types.ts";
 export type {
   Classified,
   GitBlob,

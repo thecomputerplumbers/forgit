@@ -1,5 +1,5 @@
 import { Container } from "@cloudflare/containers";
-import { classifyPath, type Classified } from "@forgit/git-client";
+import { classifyPath, lfsBatchWrites, type Classified } from "@forgit/git-client";
 import { handleGithubGraphql, handleGithubRest } from "@forgit/github-compat";
 import { handleMcp } from "@forgit/mcp";
 import { logEvent, requestIdFrom } from "@forgit/observability";
@@ -106,9 +106,9 @@ async function proxyGit(
   const services = getServices("git", requestId);
   let write = classified.write;
   let body: BodyInit | null = request.body;
-  if (request.method === "POST" && classified.suffix.startsWith("/info/lfs")) {
+  if (request.method === "POST" && classified.suffix === "/info/lfs/objects/batch") {
     const text = await request.text();
-    write = text.includes('"upload"');
+    write = lfsBatchWrites(text);
     body = text;
   }
   const actor = await services.actorFromAuthorization(request.headers.get("authorization"));

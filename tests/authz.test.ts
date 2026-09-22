@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { ForgeError } from "@forgit/domain";
-import { classifyPath } from "@forgit/git-client";
+import { classifyPath, lfsBatchWrites } from "@forgit/git-client";
 
 import { world } from "./fixture.ts";
 
@@ -64,5 +64,16 @@ describe("git path classification", () => {
     assert.equal(classifyPath("/api/widget.git/info/refs", "GET").kind, "app");
     assert.equal(classifyPath("/acme/..%2Fsecret.git/info/refs", "GET").kind, "app");
     assert.equal(classifyPath("/healthz", "GET").kind, "health");
+    const upload = classifyPath("/acme/widget.git/info/lfs/objects/abc", "PUT");
+    assert.equal(upload.kind === "git" && upload.write, true);
+    const verify = classifyPath("/acme/widget.git/info/lfs/verify", "POST");
+    assert.equal(verify.kind === "git" && verify.write, true);
+    const download = classifyPath("/acme/widget.git/info/lfs/objects/abc", "GET");
+    assert.equal(download.kind === "git" && download.write, false);
+    const batch = classifyPath("/acme/widget.git/info/lfs/objects/batch", "POST");
+    assert.equal(batch.kind === "git" && batch.write, false);
+    assert.equal(lfsBatchWrites('{"operation":"upload","objects":[]}'), true);
+    assert.equal(lfsBatchWrites('{"operation":"download","objects":[]}'), false);
+    assert.equal(lfsBatchWrites("not-json"), true);
   });
 });
