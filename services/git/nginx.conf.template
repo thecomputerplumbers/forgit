@@ -1,11 +1,11 @@
 worker_processes 1;
-error_log /dev/stderr info;
+error_log /tmp/nginx-error.log info;
 pid /tmp/nginx.pid;
 
 events { worker_connections 256; }
 
 http {
-  access_log /dev/stdout;
+  access_log /tmp/nginx-access.log;
   client_max_body_size 0;
   proxy_request_buffering off;
   proxy_buffering off;

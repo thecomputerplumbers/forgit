@@ -6,6 +6,7 @@ import { logEvent, requestIdFrom } from "@forgit/observability";
 import vinextWorker from "vinext/server/app-router-entry";
 
 import { getServices } from "../lib/forge.ts";
+import { GIT_CONTAINER_NAME } from "../lib/git-container.ts";
 
 export class GitContainer extends Container<Cloudflare.Env> {
   defaultPort = 8080;
@@ -24,6 +25,30 @@ export class GitContainer extends Container<Cloudflare.Env> {
     if (env.R2_ACCESS_KEY_ID) vars.AWS_ACCESS_KEY_ID = env.R2_ACCESS_KEY_ID;
     if (env.R2_SECRET_ACCESS_KEY) vars.AWS_SECRET_ACCESS_KEY = env.R2_SECRET_ACCESS_KEY;
     this.envVars = vars;
+  }
+
+  override onStart() {
+    console.log(JSON.stringify({ event: "git-container.start" }));
+  }
+
+  override onStop(params: Parameters<Container<Cloudflare.Env>["onStop"]>[0]) {
+    console.log(
+      JSON.stringify({
+        event: "git-container.stop",
+        exitCode: params.exitCode,
+        reason: params.reason,
+      }),
+    );
+  }
+
+  override onError(error: unknown): never {
+    console.error(
+      JSON.stringify({
+        event: "git-container.error",
+        message: error instanceof Error ? error.message : String(error),
+      }),
+    );
+    throw error;
   }
 }
 
@@ -206,7 +231,7 @@ async function upstream(env: Cloudflare.Env, request: Request): Promise<Response
       headers: { "content-type": "text/plain; charset=utf-8" },
     });
   }
-  const stub = env.GIT_CONTAINER.get(env.GIT_CONTAINER.idFromName("forgit"));
+  const stub = env.GIT_CONTAINER.get(env.GIT_CONTAINER.idFromName(GIT_CONTAINER_NAME));
   return stub.fetch(relay(`http://container${path}`, request));
 }
 

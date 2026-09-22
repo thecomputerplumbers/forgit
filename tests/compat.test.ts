@@ -197,6 +197,47 @@ describe("github rest and graphql", () => {
       data: { createPullRequest: { pullRequest: { number: number } } };
     };
     assert.equal(body.data.createPullRequest.pullRequest.number, 1);
+
+    const projectItems = await handleGithubGraphql(
+      new Request("https://git.example.com/api/graphql", {
+        method: "POST",
+        body: JSON.stringify({
+          query:
+            "query PullRequestProjectItems($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) { pullRequest(number: $number) { projectItems(first: 100) { totalCount nodes { id } pageInfo { hasNextPage endCursor } } } } }",
+          variables: { owner: "acme", name: "widget", number: 1 },
+        }),
+      }),
+      { services, actor: bob, origin: services.origin },
+    );
+    assert.deepEqual(await projectItems?.json(), {
+      data: {
+        repository: {
+          pullRequest: {
+            projectItems: {
+              totalCount: 0,
+              nodes: [],
+              pageInfo: { hasNextPage: false, endCursor: null },
+            },
+          },
+        },
+      },
+    });
+  });
+
+  it("answers gh schema feature probes", async () => {
+    const { services, alice } = await world();
+    const response = await handleGithubGraphql(
+      new Request("https://git.example.com/api/graphql", {
+        method: "POST",
+        body: JSON.stringify({
+          query:
+            'query Issue_fields { Issue: __type(name: "Issue") { fields(includeDeprecated: true) { name } } }',
+        }),
+      }),
+      { services, actor: alice, origin: services.origin },
+    );
+    assert.equal(response?.status, 200);
+    assert.deepEqual(await response?.json(), { data: { Issue: { fields: [] } } });
   });
 });
 

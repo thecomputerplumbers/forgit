@@ -648,6 +648,14 @@ export async function handleGithubGraphql(request: Request, ctx: Ctx): Promise<R
         data: { addPullRequestReview: { clientMutationId: result.review.id } },
       });
     }
+    if (query.includes("__type(")) {
+      const aliases = [...query.matchAll(/\b([A-Za-z_][A-Za-z0-9_]*)\s*:\s*__type\s*\(/g)].map(
+        (match) => match[1]!,
+      );
+      return json({
+        data: Object.fromEntries(aliases.map((alias) => [alias, { fields: [] }])),
+      });
+    }
     return json({ data: {}, errors: [{ message: "Unsupported GraphQL operation" }] }, 400);
   } catch (error) {
     return failure(error);
@@ -669,6 +677,21 @@ async function graphqlRepository(
       return json({
         data: { repository: { pullRequest: null } },
         errors: [{ type: "NOT_FOUND", message: "Not Found" }],
+      });
+    }
+    if (query.includes("projectItems(")) {
+      return json({
+        data: {
+          repository: {
+            pullRequest: {
+              projectItems: {
+                totalCount: 0,
+                nodes: [],
+                pageInfo: { hasNextPage: false, endCursor: null },
+              },
+            },
+          },
+        },
       });
     }
     return json({

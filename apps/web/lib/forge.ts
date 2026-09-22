@@ -3,6 +3,8 @@ import { createSqlStore, d1Sql } from "@forgit/db/sql-store";
 import { createServices, type Actor, type Services } from "@forgit/domain";
 import { HttpGitClient } from "@forgit/git-client";
 
+import { GIT_CONTAINER_NAME } from "./git-container.ts";
+
 export function getServices(principal: string, requestId?: string | null): Services {
   const origin = new URL(env.APP_URL).origin;
   const store = createSqlStore(d1Sql(env.DB));
@@ -19,7 +21,7 @@ export function getServices(principal: string, requestId?: string | null): Servi
 
 function containerFetch(): typeof fetch {
   const namespace = env.GIT_CONTAINER;
-  const stub = namespace.get(namespace.idFromName("forgit"));
+  const stub = namespace.get(namespace.idFromName(GIT_CONTAINER_NAME));
   return (input, init) => {
     const url =
       typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;

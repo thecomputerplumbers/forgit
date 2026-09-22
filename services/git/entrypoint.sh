@@ -2,6 +2,9 @@
 set -eu
 port="${PORT:-8080}"
 sed "s/LISTEN_PORT/${port}/" /etc/forgit/nginx.conf.template > /tmp/nginx.conf
+touch /tmp/nginx-error.log /tmp/nginx-access.log
+tail -n 0 -F /tmp/nginx-error.log /tmp/nginx-access.log &
+logs_pid=$!
 # walgit treats PORT as its own listen port. Keep it on 127.0.0.1:8081.
 env -u PORT walgit serve --config /etc/walgit/walgit.toml &
 walgit_pid=$!
@@ -28,7 +31,7 @@ if not ready(8081) or not ready(8090):
 PY
 nginx -c /tmp/nginx.conf -g "daemon off;" &
 nginx_pid=$!
-trap 'kill "$walgit_pid" "$merge_pid" "$nginx_pid" 2>/dev/null || true' TERM INT
+trap 'kill "$walgit_pid" "$merge_pid" "$nginx_pid" "$logs_pid" 2>/dev/null || true' TERM INT
 # tini is PID 1. A dead merge helper must exit this script so the platform
 # restarts the container; nginx alone would keep serving Git while merge 502s.
 while kill -0 "$walgit_pid" 2>/dev/null && kill -0 "$merge_pid" 2>/dev/null && kill -0 "$nginx_pid" 2>/dev/null; do
