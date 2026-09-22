@@ -1,0 +1,19 @@
+[tools]
+node = "26"
+pnpm = "12"
+
+[tasks.setup]
+description = "Install the pinned toolchain and workspace dependencies"
+run = "pnpm install --frozen-lockfile"
+
+[tasks.dev]
+description = "Start the forgit web app"
+run = "pnpm dev"
+
+[tasks.test]
+description = "Run the control-plane test suite"
+run = "pnpm test"
+
+[tasks.check]
+description = "Lint, typecheck, test, and build"
+run = "pnpm check && pnpm build"

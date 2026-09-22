@@ -1,0 +1,3 @@
+{
+  "extends": "@forgit/typescript-config/base.json"
+}

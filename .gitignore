@@ -1,0 +1,14 @@
+node_modules
+.pnpm-store
+dist
+.turbo
+.wrangler
+.vinext
+.next
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+coverage
+.DS_Store
+services/git/.build
