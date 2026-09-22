@@ -531,14 +531,33 @@ export function createServices(
         name: string;
         scopes: Scope[];
         repositoryIds?: string[] | null;
+        repositories?: string[];
         expiresAt?: number | null;
         kind?: "personal" | "machine";
       },
     ) {
       const { generateToken } = await import("@forgit/auth/crypto");
       const { parseScopes } = await import("@forgit/auth/scopes");
+      if (input.kind === "machine" && input.expiresAt == null) {
+        throw new ForgeError("Machine tokens must expire", 422, "expiry");
+      }
       const minted = await generateToken();
       const scopes = parseScopes(input.scopes);
+      let repositoryIds = input.repositoryIds ?? null;
+      if (input.repositories && input.repositories.length > 0) {
+        const ids: string[] = [];
+        for (const spec of input.repositories) {
+          const parts = spec.split("/");
+          const owner = parts[0] ?? "";
+          const name = parts[1] ?? "";
+          if (parts.length !== 2 || !owner || !name) {
+            throw new ForgeError("Repository must be owner/name", 422, "repo");
+          }
+          const loaded = await requireRepo(actor, owner, name, "read");
+          ids.push(loaded.repo.id);
+        }
+        repositoryIds = ids;
+      }
       const token = {
         id: crypto.randomUUID(),
         userId: actor.userId,
@@ -546,7 +565,7 @@ export function createServices(
         prefix: minted.prefix,
         hash: minted.hash,
         scopes,
-        repositoryIds: input.repositoryIds ?? null,
+        repositoryIds,
         kind: input.kind ?? "personal",
         expiresAt: input.expiresAt ?? null,
         lastUsedAt: null,

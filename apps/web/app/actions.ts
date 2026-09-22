@@ -36,9 +36,13 @@ export async function createTokenAction(
         .filter(Boolean),
     );
     const days = Number(formData.get("days") ?? 0);
+    const repositories = String(formData.get("repositories") ?? "")
+      .split(/[\s,]+/)
+      .filter(Boolean);
     const minted = await services.createToken(actor, {
       name: String(formData.get("name") ?? "token"),
       scopes,
+      repositories,
       kind: formData.get("kind") === "machine" ? "machine" : "personal",
       expiresAt: days > 0 ? services.store.now() + days * 86_400_000 : null,
     });

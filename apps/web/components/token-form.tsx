@@ -42,7 +42,11 @@ export function TokenForm() {
           </select>
         </label>
         <label>
-          Expires in days (0 keeps it until you revoke it)
+          Limit to repositories
+          <input name="repositories" placeholder="acme/widget" />
+        </label>
+        <label>
+          Expires in days (0 keeps a personal token until you revoke it)
           <input name="days" type="number" min="0" defaultValue="90" />
         </label>
         {error ? <p className="error">{error}</p> : null}

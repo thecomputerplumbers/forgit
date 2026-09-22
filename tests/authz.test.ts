@@ -39,7 +39,7 @@ describe("authorization", () => {
   });
 
   it("lets a public repository be read anonymously and still requires write to push", async () => {
-    const { services, alice } = await world();
+    const { services, alice, repo } = await world();
     await services.store.updateRepository(
       (await services.store.getRepositoryByName("org", "widget"))?.id ?? "",
       { visibility: "public" },
@@ -48,6 +48,22 @@ describe("authorization", () => {
     assert.equal(found.actual, "read");
     await assert.rejects(() => services.requireRepo(null, "acme", "widget", "write"));
     await assert.rejects(() => services.requireRepo(alice, "acme", "missing", "read"));
+    const named = await services.createToken(alice, {
+      name: "named",
+      scopes: ["repo:read"],
+      repositories: ["acme/widget"],
+    });
+    const namedActor = await services.actorFromAuthorization(`Bearer ${named.plaintext}`);
+    assert.deepEqual(namedActor?.repositoryIds, [repo.id]);
+    await assert.rejects(
+      () =>
+        services.createToken(alice, {
+          name: "ci",
+          scopes: ["repo:read"],
+          kind: "machine",
+        }),
+      (error: unknown) => error instanceof ForgeError && error.code === "expiry",
+    );
   });
 });
 
