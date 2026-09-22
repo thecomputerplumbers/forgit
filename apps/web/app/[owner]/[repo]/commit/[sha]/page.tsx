@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
 import { Patch, RepoNav, Shell } from "@/components/shell";
+import { loadGit } from "@/lib/git-view";
 import { requireOrganization } from "@/lib/session";
 
 export default async function CommitPage({
@@ -13,7 +14,20 @@ export default async function CommitPage({
   const { services, actor, user } = await requireOrganization();
   const loaded = await services.requireRepo(actor, owner, name, "read").catch(() => null);
   if (!loaded) notFound();
-  const detail = await services.git.commit(owner, name, sha);
+  const listed = await loadGit(() => services.git.commit(owner, name, sha));
+  if ("message" in listed) {
+    const host = (await headers()).get("host") ?? owner;
+    return (
+      <Shell host={host} login={user.login}>
+        <div className="sheet-head">
+          <h1>{sha}</h1>
+        </div>
+        <RepoNav owner={owner} name={name} current="Commits" />
+        <p className="error">{listed.message}</p>
+      </Shell>
+    );
+  }
+  const detail = listed.value;
   if (!detail) notFound();
   const host = (await headers()).get("host") ?? owner;
   return (

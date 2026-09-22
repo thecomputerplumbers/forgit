@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { commentAction, mergeAction, reviewAction } from "@/app/actions";
 import { Patch, RepoNav, Shell } from "@/components/shell";
+import { loadGit } from "@/lib/git-view";
 import { requireOrganization } from "@/lib/session";
 
 export default async function PullPage({
@@ -17,12 +18,21 @@ export default async function PullPage({
   const { services, actor, user } = await requireOrganization();
   const loaded = await services.requireRepo(actor, owner, name, "read").catch(() => null);
   if (!loaded) notFound();
-  const pull = await services.syncPullRequest(owner, name, Number(number));
+  const synced = await loadGit(() => services.syncPullRequest(owner, name, Number(number)));
+  const pull =
+    "value" in synced
+      ? synced.value
+      : await services.store.getPullRequest(loaded.repo.id, Number(number));
   if (!pull) notFound();
   const reviews = await services.store.listReviews(pull.id);
   const comments = await services.store.listComments(pull.id);
   const checks = await services.store.listChecks(loaded.repo.id, pull.headSha);
-  const compare = await services.git.compare(owner, name, pull.baseSha, pull.headSha);
+  const compared =
+    "message" in synced
+      ? synced
+      : await loadGit(() => services.git.compare(owner, name, pull.baseSha, pull.headSha));
+  const patch = "value" in compared ? (compared.value?.patch ?? "") : "";
+  const gitMessage = "message" in compared ? compared.message : null;
   const rules = await services.store.getRules(loaded.repo.id);
   const host = (await headers()).get("host") ?? owner;
   return (
@@ -42,6 +52,7 @@ export default async function PullPage({
       </div>
       <RepoNav owner={owner} name={name} current="Pulls" />
       {error ? <p className="error">{error}</p> : null}
+      {gitMessage ? <p className="error">{gitMessage}</p> : null}
       <div className="pad">
         <p>
           Approvals required: {rules.requiredApprovals}. Checks required:{" "}
@@ -68,7 +79,7 @@ export default async function PullPage({
           <p>{comment.body}</p>
         </div>
       ))}
-      <Patch patch={compare?.patch ?? ""} />
+      <Patch patch={patch} />
       {pull.state === "open" ? (
         <>
           <form action={reviewAction} className="stack">

@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
 import { RepoNav, Shell } from "@/components/shell";
+import { loadGit } from "@/lib/git-view";
 import { requireOrganization } from "@/lib/session";
 
 export default async function TreePage({
@@ -15,7 +16,20 @@ export default async function TreePage({
   if (!loaded) notFound();
   const ref = slug[0] ?? loaded.repo.defaultBranch;
   const path = slug.slice(1).join("/");
-  const tree = await services.git.tree(owner, name, ref, path);
+  const listed = await loadGit(() => services.git.tree(owner, name, ref, path));
+  if ("message" in listed) {
+    const host = (await headers()).get("host") ?? owner;
+    return (
+      <Shell host={host} login={user.login}>
+        <div className="sheet-head">
+          <h1>{path || name}</h1>
+        </div>
+        <RepoNav owner={owner} name={name} current="Code" />
+        <p className="error">{listed.message}</p>
+      </Shell>
+    );
+  }
+  const tree = listed.value;
   if (!tree) notFound();
   const host = (await headers()).get("host") ?? owner;
   return (

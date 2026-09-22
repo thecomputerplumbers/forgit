@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
 import { RepoNav, Shell } from "@/components/shell";
+import { loadGit } from "@/lib/git-view";
 import { requireOrganization } from "@/lib/session";
 
 export default async function CommitsPage({
@@ -14,7 +15,8 @@ export default async function CommitsPage({
   const loaded = await services.requireRepo(actor, owner, name, "read").catch(() => null);
   if (!loaded) notFound();
   const ref = slug?.[0] ?? loaded.repo.defaultBranch;
-  const page = await services.git.commits(owner, name, ref, 0, 40);
+  const listed = await loadGit(() => services.git.commits(owner, name, ref, 0, 40));
+  const page = "value" in listed ? listed.value : null;
   const host = (await headers()).get("host") ?? owner;
   return (
     <Shell host={host} login={user.login}>
@@ -23,6 +25,7 @@ export default async function CommitsPage({
         <p className="muted">{ref}</p>
       </div>
       <RepoNav owner={owner} name={name} current="Commits" />
+      {"message" in listed ? <p className="error">{listed.message}</p> : null}
       {page?.commits.map((commit) => (
         <a className="row" href={`/${owner}/${name}/commit/${commit.sha}`} key={commit.sha}>
           <span>{commit.subject}</span>
@@ -30,7 +33,9 @@ export default async function CommitsPage({
           <span className="sha">{commit.sha.slice(0, 10)}</span>
         </a>
       ))}
-      {!page?.commits.length ? <p className="pad">No commits on this ref.</p> : null}
+      {"message" in listed || page?.commits.length ? null : (
+        <p className="pad">No commits on this ref.</p>
+      )}
     </Shell>
   );
 }
