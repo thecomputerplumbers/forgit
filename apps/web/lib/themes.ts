@@ -1,4 +1,18 @@
 export const THEME_COOKIE = "forgit-theme";
+export const MODE_COOKIE = "forgit-mode";
+
+export type ModePreference = "system" | "light" | "dark";
+
+export function modePreference(value: string | undefined): ModePreference {
+  return value === "light" || value === "dark" ? value : "system";
+}
+
+/**
+ * Runs in <head> before first paint: resolves "system" to light or dark from
+ * the OS setting and keeps following it, so there is never a flash of the
+ * wrong mode.
+ */
+export const MODE_SCRIPT = `(function(){try{var d=document.documentElement,m=window.matchMedia("(prefers-color-scheme: dark)");function s(){var p=d.dataset.modePref;d.dataset.mode=p==="light"||p==="dark"?p:(m.matches?"dark":"light")}s();m.addEventListener("change",s);new MutationObserver(s).observe(d,{attributeFilter:["data-mode-pref"]})}catch(e){}})()`;
 
 export type ThemeId = "classic" | "retro" | "playful" | "animals" | "weird";
 
@@ -10,17 +24,24 @@ export type Theme = {
   fonts?: string;
   /** Three colors for the picker swatch. */
   swatch: [string, string, string];
+  /** What the theme becomes in each mode, shown in the picker. */
+  light: string;
+  dark: string;
 };
 
 export const THEMES: Theme[] = [
   {
     id: "classic",
+    light: "Porcelain",
+    dark: "Enamel night",
     name: "Classic",
     tagline: "Enamel and brass",
     swatch: ["#14324d", "#f0c56a", "#f6f7f9"],
   },
   {
     id: "retro",
+    light: "Dot-matrix printout",
+    dark: "Green screen",
     name: "Phosphor '84",
     tagline: "A green screen that hums",
     fonts: "https://fonts.googleapis.com/css2?family=VT323&display=swap",
@@ -28,6 +49,8 @@ export const THEMES: Theme[] = [
   },
   {
     id: "playful",
+    light: "Sticker book",
+    dark: "Glow in the dark",
     name: "Bubblegum",
     tagline: "Stickers, straws, confetti",
     fonts: "https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap",
@@ -35,6 +58,8 @@ export const THEMES: Theme[] = [
   },
   {
     id: "animals",
+    light: "Morning trail",
+    dark: "Night hike",
     name: "Field Guide",
     tagline: "Every repo has a critter",
     fonts:
@@ -43,6 +68,8 @@ export const THEMES: Theme[] = [
   },
   {
     id: "weird",
+    light: "Bone and pastel goo",
+    dark: "Lava lamp void",
     name: "The Melt",
     tagline: "It is looking at you",
     fonts:

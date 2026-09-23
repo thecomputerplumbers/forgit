@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import type { ReactNode } from "react";
 
 import { ThemeEffects } from "@/components/theme";
-import { THEME_COOKIE, themeById } from "@/lib/themes";
+import { MODE_COOKIE, MODE_SCRIPT, THEME_COOKIE, modePreference, themeById } from "@/lib/themes";
 
 import "./globals.css";
 import "./themes.css";
@@ -24,10 +24,20 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const theme = themeById((await cookies()).get(THEME_COOKIE)?.value);
+  const jar = await cookies();
+  const theme = themeById(jar.get(THEME_COOKIE)?.value);
+  const mode = modePreference(jar.get(MODE_COOKIE)?.value);
   return (
-    <html data-theme={theme.id} lang="en">
+    // data-mode is resolved in the browser by MODE_SCRIPT when the preference is "system".
+    <html
+      data-mode={mode === "system" ? "light" : mode}
+      data-mode-pref={mode}
+      data-theme={theme.id}
+      lang="en"
+      suppressHydrationWarning
+    >
       <head>
+        <script dangerouslySetInnerHTML={{ __html: MODE_SCRIPT }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link

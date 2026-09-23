@@ -2,17 +2,47 @@
 
 import { useEffect, useSyncExternalStore } from "react";
 
-import { THEME_COOKIE, THEMES, themeById, type ThemeId } from "@/lib/themes";
+import {
+  MODE_COOKIE,
+  THEME_COOKIE,
+  THEMES,
+  modePreference,
+  themeById,
+  type ModePreference,
+  type ThemeId,
+} from "@/lib/themes";
 
 function subscribe(callback: () => void) {
   const observer = new MutationObserver(callback);
-  observer.observe(document.documentElement, { attributeFilter: ["data-theme"] });
+  observer.observe(document.documentElement, {
+    attributeFilter: ["data-theme", "data-mode", "data-mode-pref"],
+  });
   return () => observer.disconnect();
 }
 
 function currentTheme(): ThemeId {
   return themeById(document.documentElement.dataset.theme).id;
 }
+
+function currentPreference(): ModePreference {
+  return modePreference(document.documentElement.dataset.modePref);
+}
+
+function currentMode(): "light" | "dark" {
+  return document.documentElement.dataset.mode === "dark" ? "dark" : "light";
+}
+
+/** The head script watches data-mode-pref and resolves data-mode from it. */
+export function applyMode(preference: ModePreference) {
+  document.cookie = `${MODE_COOKIE}=${preference}; path=/; max-age=31536000; samesite=lax`;
+  document.documentElement.dataset.modePref = preference;
+}
+
+const MODES: Array<[ModePreference, string]> = [
+  ["system", "System"],
+  ["light", "Light"],
+  ["dark", "Dark"],
+];
 
 export function applyTheme(id: ThemeId) {
   const theme = themeById(id);
@@ -29,9 +59,28 @@ export function applyTheme(id: ThemeId) {
 
 export function ThemePicker() {
   const current = useSyncExternalStore(subscribe, currentTheme, () => "classic" as ThemeId);
+  const preference = useSyncExternalStore(
+    subscribe,
+    currentPreference,
+    () => "system" as ModePreference,
+  );
+  const mode = useSyncExternalStore(subscribe, currentMode, () => "light" as const);
   return (
     <div className="theme-picker" role="group" aria-label="Theme">
       <div className="menu-label">Theme</div>
+      <div aria-label="Light or dark" className="mode-switch" role="radiogroup">
+        {MODES.map(([value, label]) => (
+          <button
+            aria-checked={preference === value}
+            key={value}
+            onClick={() => applyMode(value)}
+            role="radio"
+            type="button"
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       {THEMES.map((theme) => (
         <button
           aria-pressed={theme.id === current}
@@ -47,7 +96,7 @@ export function ThemePicker() {
           </span>
           <span className="theme-option-text">
             <strong>{theme.name}</strong>
-            <span>{theme.tagline}</span>
+            <span>{mode === "dark" ? theme.dark : theme.light}</span>
           </span>
         </button>
       ))}
