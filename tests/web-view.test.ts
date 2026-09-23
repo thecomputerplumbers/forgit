@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { Markdown } from "../apps/web/components/markdown.tsx";
+import { describeActivity } from "../apps/web/lib/activity.ts";
 import { parsePatch } from "../apps/web/lib/diff.ts";
 import { formatBytes, initials, timeAgo } from "../apps/web/lib/format.ts";
 import { highlightLines, languageForPath } from "../apps/web/lib/highlight.ts";
@@ -150,5 +151,23 @@ describe("markdown", () => {
 
   it("highlights fenced code", () => {
     assert.match(render("```ts\nconst a = 1;\n```"), /hljs-keyword/);
+  });
+});
+
+describe("dashboard activity", () => {
+  it("phrases people-facing events and skips machine noise", () => {
+    assert.deepEqual(
+      describeActivity({
+        action: "pull_request.review",
+        target: "4",
+        metadata: { state: "changes_requested" },
+      }),
+      { verb: "requested changes on", pull: 4 },
+    );
+    assert.deepEqual(
+      describeActivity({ action: "repo.member", target: "bob", metadata: { role: "write" } }),
+      { verb: "gave bob write access to" },
+    );
+    assert.equal(describeActivity({ action: "check.record", target: "abc", metadata: {} }), null);
   });
 });

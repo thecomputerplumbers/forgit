@@ -1107,6 +1107,8 @@ input[type="radio"] {
   margin: 0;
   padding: 12px 44px 12px 14px;
   overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   font-size: 12.5px;
   line-height: 1.65;
 }
@@ -2364,4 +2366,385 @@ input[type="radio"] {
 }
 .hljs-deletion {
   color: var(--danger);
+}
+
+/* ---------- Home: enamel plate, manifold, panels ---------- */
+
+:root {
+  --plate: #14324d;
+  --plate-ink: #f3d489;
+  --plate-rim: #c9973f;
+  --pipe: #c9973f;
+  --patina: #3f7d6e;
+  --display: "Archivo", var(--sans);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --plate: #173a5a;
+    --pipe: #a57a31;
+    --patina: #5fae99;
+  }
+}
+
+.home {
+  padding-top: 28px;
+}
+.plate {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 30px 40px;
+  border-radius: 14px;
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgb(255 255 255 / 0.1), transparent 55%), var(--plate);
+  color: var(--plate-ink);
+  /* The rim line is what makes it read as an enamel sign rather than a banner. */
+  box-shadow:
+    inset 0 0 0 6px var(--plate),
+    inset 0 0 0 7.5px color-mix(in srgb, var(--plate-rim) 80%, transparent),
+    0 1px 0 rgb(255 255 255 / 0.4),
+    0 10px 30px -12px rgb(10 30 50 / 0.55);
+}
+.rivet {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fbe6b0, var(--plate-rim) 55%, #6d4c14);
+  box-shadow: 0 1px 1px rgb(0 0 0 / 0.45);
+}
+.rivet-tl {
+  top: 16px;
+  left: 16px;
+}
+.rivet-tr {
+  top: 16px;
+  right: 16px;
+}
+.rivet-bl {
+  bottom: 16px;
+  left: 16px;
+}
+.rivet-br {
+  right: 16px;
+  bottom: 16px;
+}
+.plate-body {
+  min-width: 0;
+}
+.plate-name {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(26px, 4.4vw, 44px);
+  font-stretch: 125%;
+  font-variation-settings: "wdth" 125;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.35);
+}
+.plate-host {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 12px;
+  color: color-mix(in srgb, var(--plate-ink) 70%, #9fb4c7);
+  font-size: 13px;
+  min-width: 0;
+}
+.plate-host code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.plate-host .btn-ghost {
+  color: inherit;
+}
+.plate-host .btn-ghost:hover {
+  background: rgb(255 255 255 / 0.1);
+  color: #fff;
+}
+.plate-action {
+  flex: none;
+  border-color: var(--plate-rim);
+  background: var(--plate-ink);
+  color: #1d2a36;
+  font-weight: 600;
+  box-shadow: 0 1px 0 rgb(0 0 0 / 0.3);
+}
+.plate-action:hover {
+  background: #f7e0a6;
+}
+.home-summary {
+  margin: 16px 2px 28px;
+  color: var(--text-2);
+  font-size: 15px;
+}
+.home-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.home-section-head h2,
+.panel h2 {
+  font-size: 15px;
+  font-weight: 650;
+}
+.home-filter {
+  width: min(280px, 100%);
+}
+
+/* The manifold: repositories hang off one brass pipe; each valve shows state. */
+.manifold {
+  position: relative;
+  margin: 0;
+  padding: 0 0 0 34px;
+  list-style: none;
+}
+/* Each fitting draws its own run of pipe, so the pipe stops at the last valve. */
+.fitting::after {
+  content: "";
+  position: absolute;
+  top: -11px;
+  bottom: -1px;
+  left: -23px;
+  width: 4px;
+  background: linear-gradient(90deg, #8a6420, var(--pipe) 45%, #e6c177 60%, #8a6420);
+}
+.fitting:first-child::after {
+  top: 0;
+  border-radius: 2px 2px 0 0;
+}
+.fitting:last-of-type::after {
+  bottom: auto;
+  height: 37px;
+  border-radius: 0 0 2px 2px;
+}
+.fitting:first-child:last-of-type::after {
+  height: 26px;
+}
+.fitting {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.fitting + .fitting {
+  margin-top: 10px;
+}
+.fitting::before {
+  content: "";
+  position: absolute;
+  top: 25px;
+  left: -21px;
+  width: 21px;
+  z-index: 1;
+  height: 3px;
+  background: var(--pipe);
+}
+.valve {
+  position: absolute;
+  z-index: 2;
+  top: 20px;
+  left: -28px;
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--pipe);
+  border-radius: 50%;
+  background: var(--surface);
+}
+.fitting-flowing .valve {
+  border-color: var(--patina);
+  background: var(--patina);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--patina) 22%, transparent);
+}
+.fitting-shut .valve {
+  border-color: var(--border-strong);
+  background: var(--surface-3);
+}
+.fitting-shut::before {
+  background: var(--border-strong);
+}
+.fitting-main {
+  flex: 1;
+  min-width: 0;
+}
+.fitting-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.fitting-title a {
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 650;
+}
+.fitting-title a:hover {
+  color: var(--accent-text);
+}
+.fitting-description {
+  margin-top: 4px;
+  color: var(--text-2);
+}
+.fitting-meta {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  color: var(--text-3);
+  font-size: 12.5px;
+}
+.fitting-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.fitting-pulls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--patina) 14%, transparent);
+  color: var(--patina);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.fitting-pulls:hover {
+  text-decoration: none;
+  background: color-mix(in srgb, var(--patina) 22%, transparent);
+}
+
+/* Side panels: quieter than boxes, separated by rules rather than cards. */
+.home-aside {
+  display: flex;
+  flex-direction: column;
+}
+.panel {
+  padding: 0 0 22px;
+}
+.panel + .panel {
+  padding-top: 22px;
+  border-top: 1px solid var(--border);
+}
+.panel h2 {
+  margin-bottom: 12px;
+}
+.panel-empty {
+  color: var(--text-3);
+  font-size: 13.5px;
+}
+.panel-list,
+.checklist,
+.feed {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13.5px;
+}
+.panel-list li {
+  display: flex;
+  gap: 10px;
+}
+.panel-list .icon {
+  margin-top: 2px;
+}
+.panel-list a {
+  color: var(--text);
+  font-weight: 600;
+}
+.panel-list p {
+  color: var(--text-3);
+  font-size: 12.5px;
+}
+.feed li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.feed p {
+  color: var(--text-2);
+  line-height: 1.45;
+}
+.feed strong {
+  color: var(--text);
+}
+.feed-repo,
+.feed-time {
+  color: var(--text-3);
+}
+.feed-time {
+  display: block;
+  font-size: 12px;
+}
+.checklist li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.checklist .icon {
+  color: var(--text-3);
+}
+.checklist li.done {
+  color: var(--text-3);
+  text-decoration: line-through;
+  text-decoration-color: var(--border-strong);
+}
+.checklist li.done .icon {
+  color: var(--patina);
+}
+.panel-details summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  list-style: none;
+}
+.panel-details summary::-webkit-details-marker {
+  display: none;
+}
+.panel-details summary h2 {
+  margin: 0;
+}
+.panel-details[open] summary .icon {
+  transform: rotate(180deg);
+}
+.panel-details p {
+  margin: 12px 0 10px;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .plate {
+    padding: 34px 30px 30px;
+  }
+  .topbar-org {
+    max-width: 44vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .plate-action {
+    width: 100%;
+  }
+  .fitting {
+    flex-wrap: wrap;
+  }
 }

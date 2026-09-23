@@ -48,8 +48,13 @@ export function Shell({
             </>
           ) : null}
           <nav className="topbar-nav" aria-label="Main">
-            <a className="btn btn-sm" href="/new">
-              <Icon name="plus" /> <span className="hide-sm">New repository</span>
+            <a
+              aria-label="New repository"
+              className="btn btn-icon btn-ghost"
+              href="/new"
+              title="New repository"
+            >
+              <Icon name="plus" />
             </a>
             <UserMenu login={user.login} name={user.name} />
           </nav>
