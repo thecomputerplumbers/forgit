@@ -8,8 +8,7 @@
 
 .avatar-animal,
 .valve-animal,
-.repo-mascot,
-.logo-eye {
+.repo-mascot {
   display: none;
 }
 
@@ -122,6 +121,7 @@
    ===================================================================== */
 
 :root[data-theme="retro"] {
+  --mascot-glow: drop-shadow(0 0 6px rgb(250 247 239 / 0.35));
   color-scheme: dark;
   --bg: #030a04;
   --surface: #051007;
@@ -309,9 +309,15 @@
   background: transparent;
   color: var(--text);
 }
-[data-theme="retro"] .logo-mark {
-  border: 1px solid var(--text);
-  border-radius: 0;
+[data-theme="retro"] .mascot {
+  /* Rendered by the same phosphor as everything else. */
+  filter: grayscale(1) brightness(1.1) sepia(1) hue-rotate(60deg) saturate(4) contrast(1.15);
+}
+[data-theme="retro"][data-mode="light"] .mascot {
+  filter: grayscale(1) contrast(1.2);
+}
+[data-theme="retro"] .wordmark-tittle {
+  fill: var(--accent);
 }
 [data-theme="retro"] .tabs a[aria-current="page"],
 [data-theme="retro"] .pr-tabs a[aria-current="page"] {
@@ -526,10 +532,8 @@
 [data-theme="playful"] .pr-tabs a[aria-current="page"] {
   border-bottom: 4px solid #ff5fa2;
 }
-[data-theme="playful"] .logo-mark {
-  border: 2px solid var(--ink);
-  border-radius: 10px;
-  box-shadow: 2px 2px 0 var(--ink-shadow);
+[data-theme="playful"] .wordmark-tittle {
+  fill: #ff5fa2;
 }
 [data-theme="playful"] .plate {
   border: 3px solid var(--ink);
@@ -742,14 +746,8 @@
   font-size: 22px;
   line-height: 1;
 }
-[data-theme="animals"] .logo-branch {
-  display: none;
-}
-[data-theme="animals"] .logo-mark::after {
-  /* Beavers: nature's plumbers. */
-  content: "🦫";
-  font-size: 18px;
-  line-height: 1;
+[data-theme="animals"] .wordmark-tittle {
+  fill: #e9b949;
 }
 [data-theme="animals"] .tabs a[aria-current="page"],
 [data-theme="animals"] .pr-tabs a[aria-current="page"] {
@@ -854,6 +852,7 @@
    ===================================================================== */
 
 :root[data-theme="weird"] {
+  --mascot-glow: drop-shadow(0 0 6px rgb(250 247 239 / 0.35));
   color-scheme: dark;
   --bg: #120822;
   --surface: rgb(33 18 58 / 0.86);
@@ -1031,16 +1030,17 @@
   color: #120822;
   border-radius: 46% 54% 40% 60% / 60% 40% 58% 42%;
 }
-[data-theme="weird"] .logo-mark {
-  background: #f4ebff;
+[data-theme="weird"] .logo-eye {
+  /* An extra eye, peeking over the wordmark. */
+  display: block;
+  margin-left: -4px;
   border-radius: 50%;
+  background: #f4ebff;
+  box-shadow: 0 0 0 1.5px #120822;
   animation: eye-blink 6s infinite;
 }
-[data-theme="weird"] .logo-branch {
-  display: none;
-}
-[data-theme="weird"] .logo-eye {
-  display: block;
+[data-theme="weird"] .wordmark-tittle {
+  fill: #ff7ac6;
 }
 .logo-eye-white {
   fill: #fff;
@@ -1189,6 +1189,7 @@
 /* ---------- Phosphor '84, light: a dot-matrix printout ---------- */
 
 :root[data-theme="retro"][data-mode="light"] {
+  --mascot-glow: none;
   color-scheme: light;
   --bg: #fbf8ef;
   --surface: rgb(255 253 246 / 0.92);
@@ -1273,6 +1274,7 @@
 /* ---------- Bubblegum, dark: glow in the dark ---------- */
 
 :root[data-theme="playful"][data-mode="dark"] {
+  --mascot-glow: drop-shadow(0 0 6px rgb(250 247 239 / 0.35));
   color-scheme: dark;
   --ink: #e6d8ff;
   --ink-shadow: #ff5fa2;
@@ -1327,6 +1329,7 @@
 /* ---------- Field Guide, dark: a night hike ---------- */
 
 :root[data-theme="animals"][data-mode="dark"] {
+  --mascot-glow: drop-shadow(0 0 6px rgb(250 247 239 / 0.35));
   color-scheme: dark;
   --bg: #0e1813;
   --surface: #15221b;
@@ -1429,6 +1432,7 @@
 /* ---------- The Melt, light: bone and pastel goo ---------- */
 
 :root[data-theme="weird"][data-mode="light"] {
+  --mascot-glow: none;
   color-scheme: light;
   --bg: #f4efe6;
   --surface: rgb(255 252 247 / 0.82);
@@ -1474,9 +1478,6 @@
   --menu-bg: #fffaf4;
   --wave: #e0529f;
   --goo-opacity: 0.75;
-}
-[data-theme="weird"][data-mode="light"] .logo-mark {
-  box-shadow: 0 0 0 1.5px #24133b;
 }
 [data-theme="weird"][data-mode="light"] .page-header h1,
 [data-theme="weird"][data-mode="light"] .pr-hero h1,

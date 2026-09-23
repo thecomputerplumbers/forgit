@@ -8,13 +8,43 @@ import { MODE_COOKIE, MODE_SCRIPT, THEME_COOKIE, modePreference, themeById } fro
 import "./globals.css";
 import "./themes.css";
 
-export const metadata: Metadata = {
-  title: { default: "forgit", template: "%s · forgit" },
-  description: "Self-hostable Git on Cloudflare",
-  icons: {
-    icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2314324d'/%3E%3Cpath d='M11 8v12M21 14a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM11 26a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM21 14a9 9 0 0 1-9 9' fill='none' stroke='%23f0c56a' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E",
-  },
-};
+const DESCRIPTION = "Self-hosted Git on Cloudflare. Commit less. Live more.";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const { env } = await import("cloudflare:workers");
+  const base = new URL(env.APP_URL);
+  return {
+    metadataBase: base,
+    title: { default: "forgit", template: "%s · forgit" },
+    description: DESCRIPTION,
+    applicationName: "forgit",
+    icons: {
+      icon: [
+        { url: "/brand/icon-32.png", sizes: "32x32", type: "image/png" },
+        { url: "/brand/icon-192.png", sizes: "192x192", type: "image/png" },
+        { url: "/brand/icon-512.png", sizes: "512x512", type: "image/png" },
+      ],
+      shortcut: "/brand/favicon.ico",
+      apple: "/brand/apple-touch-icon.png",
+    },
+    openGraph: {
+      type: "website",
+      siteName: "forgit",
+      title: "forgit",
+      description: DESCRIPTION,
+      url: base.origin,
+      images: [
+        { url: "/brand/og.png", width: 1200, height: 630, alt: "forgit: commit less, live more" },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "forgit",
+      description: DESCRIPTION,
+      images: ["/brand/og.png"],
+    },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: [

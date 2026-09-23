@@ -30,6 +30,13 @@
   --hunk-bg: #eef3fd;
   --brand: #14324d;
   --brand-ink: #f0c56a;
+  /* The forgit brand palette: ink, paper, stone, and the accent square. */
+  --forgit-ink: #1f1f1f;
+  --forgit-paper: #faf7ef;
+  --forgit-stone: #dad6c9;
+  --forgit-accent: #e05a3c;
+  /* The mascot glows only against dark backgrounds. */
+  --mascot-glow: none;
   --focus: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent);
   --shadow-sm: 0 1px 2px rgb(16 24 40 / 0.05);
   --shadow-md: 0 4px 16px rgb(16 24 40 / 0.08), 0 1px 3px rgb(16 24 40 / 0.06);
@@ -41,6 +48,7 @@
 
 :root[data-mode="dark"] {
   color-scheme: dark;
+  --mascot-glow: drop-shadow(0 0 6px rgb(250 247 239 / 0.35));
   --bg: #0d0f13;
   --surface: #14171c;
   --surface-2: #181b21;
@@ -235,15 +243,26 @@ hr {
 .logo:hover {
   text-decoration: none;
 }
-.logo-mark {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
-  background: var(--brand);
-  color: var(--brand-ink);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+.lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.mascot {
+  display: block;
+  flex: none;
+  filter: var(--mascot-glow);
+}
+.wordmark {
+  display: block;
+  flex: none;
+  overflow: visible;
+}
+.wordmark-tittle {
+  fill: var(--forgit-accent);
+}
+.logo-eye {
+  display: none;
 }
 .topbar-sep {
   color: var(--border-strong);
@@ -2071,16 +2090,23 @@ input[type="radio"] {
 }
 .auth-logo {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
   margin-bottom: 24px;
 }
-.auth-logo .logo {
-  font-size: 20px;
+.auth-logo a {
+  color: var(--text);
 }
-.auth-logo .logo-mark {
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
+.auth-logo .lockup {
+  gap: 12px;
+}
+.auth-tagline {
+  margin: 0;
+  color: var(--text-3);
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 .auth-card {
   padding: 28px;
