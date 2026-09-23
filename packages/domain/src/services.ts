@@ -34,8 +34,12 @@ export function createServices(
     repo: Repository,
   ): Promise<"none" | "read" | "write" | "admin"> {
     if (actor?.repositoryIds && !actor.repositoryIds.includes(repo.id)) return "none";
-    const orgMember = actor ? await store.getOrgMember(repo.organizationId, actor.userId) : null;
-    const repoMember = actor ? await store.getRepoMember(repo.id, actor.userId) : null;
+    const [orgMember, repoMember] = actor
+      ? await Promise.all([
+          store.getOrgMember(repo.organizationId, actor.userId),
+          store.getRepoMember(repo.id, actor.userId),
+        ])
+      : [null, null];
     let role: RepoRole | null = null;
     if (orgMember?.role === "owner" || orgMember?.role === "admin") role = "admin";
     else if (repoMember) role = repoMember.role;
@@ -160,9 +164,8 @@ export function createServices(
       const now = store.now();
       if (row.revokedAt || (row.expiresAt !== null && row.expiresAt <= now)) return null;
       if (!safeEqual(row.hash, await hashToken(token))) return null;
-      const user = await store.getUser(row.userId);
+      const [user] = await Promise.all([store.getUser(row.userId), store.touchToken(row.id, now)]);
       if (!user) return null;
-      await store.touchToken(row.id, now);
       return {
         userId: user.id,
         login: user.login,
