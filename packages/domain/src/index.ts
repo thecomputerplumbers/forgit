@@ -21,7 +21,7 @@ export type {
   Webhook,
   WebhookDelivery,
 } from "./types.ts";
-export type { ForgeStore } from "./store.ts";
+export type { ForgeStore, RepoAccess } from "./store.ts";
 export { MemoryStore } from "./memory.ts";
 export { createServices } from "./services.ts";
 export { assertWebhookUrl } from "./webhook.ts";

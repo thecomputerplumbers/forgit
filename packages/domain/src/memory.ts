@@ -115,6 +115,17 @@ export class MemoryStore implements ForgeStore {
     return repo ? { ...repo } : null;
   }
 
+  async getRepoAccess(owner: string, name: string, userId: string | null) {
+    const org = await this.getOrganizationBySlug(owner);
+    if (!org) return null;
+    const repo = await this.getRepositoryByName(org.id, name);
+    if (!repo) return null;
+    const [orgMember, repoMember] = userId
+      ? await Promise.all([this.getOrgMember(org.id, userId), this.getRepoMember(repo.id, userId)])
+      : [null, null];
+    return { org, repo, orgMember, repoMember };
+  }
+
   async listRepositoriesForOrg(organizationId: string) {
     return [...this.repositories.values()]
       .filter((repo) => repo.organizationId === organizationId)

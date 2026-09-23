@@ -284,6 +284,39 @@ export function createSqlStore(sql: Sql): ForgeStore {
       return rows[0] ? repo(rows[0]) : null;
     },
 
+    async getRepoAccess(owner, name, userId) {
+      const rows = await sql.all<
+        RepoRow & {
+          org_id: string;
+          org_name: string;
+          org_slug: string;
+          org_role: OrgRole | null;
+          repo_role: RepoRole | null;
+        }
+      >(
+        `SELECT r.*, o.id AS org_id, o.name AS org_name, o.slug AS org_slug,
+                m.role AS org_role, rm.role AS repo_role
+         FROM organization o
+         JOIN repositories r ON r.organization_id = o.id AND r.name = ?
+         LEFT JOIN member m ON m.organization_id = o.id AND m.user_id = ?
+         LEFT JOIN repository_members rm ON rm.repository_id = r.id AND rm.user_id = ?
+         WHERE o.slug = ?`,
+        [name, userId, userId, owner],
+      );
+      const row = rows[0];
+      if (!row) return null;
+      return {
+        org: { id: row.org_id, name: row.org_name, slug: row.org_slug },
+        repo: repo(row),
+        orgMember:
+          userId && row.org_role
+            ? { organizationId: row.org_id, userId, role: row.org_role }
+            : null,
+        repoMember:
+          userId && row.repo_role ? { repositoryId: row.id, userId, role: row.repo_role } : null,
+      };
+    },
+
     async listRepositoriesForOrg(organizationId) {
       const rows = await sql.all<RepoRow>(
         `SELECT * FROM repositories WHERE organization_id = ? ORDER BY name`,

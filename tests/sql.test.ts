@@ -60,6 +60,24 @@ describe("sql store", () => {
       createdAt: now,
       updatedAt: now,
     });
+    const ownerAccess = await store.getRepoAccess("acme", "widget", "alice");
+    assert.equal(ownerAccess?.repo.id, "repo");
+    assert.equal(ownerAccess?.orgMember?.role, "owner");
+    assert.equal(ownerAccess?.repoMember, null);
+    const anonymousAccess = await store.getRepoAccess("acme", "widget", null);
+    assert.equal(anonymousAccess?.repo.id, "repo");
+    assert.equal(anonymousAccess?.orgMember, null);
+    assert.equal(anonymousAccess?.repoMember, null);
+    assert.equal(await store.getRepoAccess("acme", "missing", "alice"), null);
+    database
+      .prepare(
+        `INSERT INTO user (id, name, email, email_verified, created_at, updated_at) VALUES (?, ?, ?, 1, ?, ?)`,
+      )
+      .run("bob", "Bob", "bob@example.com", now, now);
+    await store.upsertRepoMember({ repositoryId: "repo", userId: "bob", role: "write" });
+    const collaboratorAccess = await store.getRepoAccess("acme", "widget", "bob");
+    assert.equal(collaboratorAccess?.orgMember, null);
+    assert.equal(collaboratorAccess?.repoMember?.role, "write");
     assert.equal(await store.allocatePullNumber("repo"), 1);
     assert.equal(await store.allocatePullNumber("repo"), 2);
     await store.insertPullRequest({

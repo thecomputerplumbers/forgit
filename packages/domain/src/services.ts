@@ -5,7 +5,7 @@ import { signBody } from "@forgit/auth/crypto";
 
 import { assertWebhookUrl } from "./webhook.ts";
 
-import type { ForgeStore } from "./store.ts";
+import type { ForgeStore, RepoAccess } from "./store.ts";
 import {
   ForgeError,
   type Actor,
@@ -29,17 +29,11 @@ export function createServices(
 ) {
   const publicOrigin = origin.replace(/\/$/, "");
 
-  async function level(
+  function level(
     actor: Actor | null,
-    repo: Repository,
-  ): Promise<"none" | "read" | "write" | "admin"> {
+    { repo, orgMember, repoMember }: RepoAccess,
+  ): "none" | "read" | "write" | "admin" {
     if (actor?.repositoryIds && !actor.repositoryIds.includes(repo.id)) return "none";
-    const [orgMember, repoMember] = actor
-      ? await Promise.all([
-          store.getOrgMember(repo.organizationId, actor.userId),
-          store.getRepoMember(repo.id, actor.userId),
-        ])
-      : [null, null];
     let role: RepoRole | null = null;
     if (orgMember?.role === "owner" || orgMember?.role === "admin") role = "admin";
     else if (repoMember) role = repoMember.role;
@@ -73,11 +67,10 @@ export function createServices(
   ) {
     assertRepoName(owner);
     assertRepoName(name);
-    const org = await store.getOrganizationBySlug(owner);
-    if (!org) throw new ForgeError("Repository not found", 404, "not_found");
-    const repo = await store.getRepositoryByName(org.id, name);
-    if (!repo) throw new ForgeError("Repository not found", 404, "not_found");
-    const actual = await level(actor, repo);
+    const access = await store.getRepoAccess(owner, name, actor?.userId ?? null);
+    if (!access) throw new ForgeError("Repository not found", 404, "not_found");
+    const { org, repo } = access;
+    const actual = level(actor, access);
     if (repo.archived && needed !== "read")
       throw new ForgeError("Repository is archived", 403, "archived");
     requireLevel(actual, needed);

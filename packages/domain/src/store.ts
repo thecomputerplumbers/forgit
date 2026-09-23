@@ -16,6 +16,13 @@ import type {
   WebhookDelivery,
 } from "./types.ts";
 
+export type RepoAccess = {
+  org: Organization;
+  repo: Repository;
+  orgMember: OrgMember | null;
+  repoMember: RepoMember | null;
+};
+
 export interface ForgeStore {
   now(): number;
 
@@ -35,6 +42,7 @@ export interface ForgeStore {
   insertRepository(repo: Repository): Promise<void>;
   getRepository(id: string): Promise<Repository | null>;
   getRepositoryByName(organizationId: string, name: string): Promise<Repository | null>;
+  getRepoAccess(owner: string, name: string, userId: string | null): Promise<RepoAccess | null>;
   listRepositoriesForOrg(organizationId: string): Promise<Repository[]>;
   listRepositoriesForUser(userId: string): Promise<Array<Repository & { owner: string }>>;
   updateRepository(
