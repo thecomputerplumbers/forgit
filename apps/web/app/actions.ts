@@ -31,13 +31,16 @@ export async function createTokenAction(
   const { services, actor } = await requireForge();
   try {
     const scopes = parseScopes(
-      String(formData.get("scopes") ?? "repo:read")
-        .split(/[\s,]+/)
+      formData
+        .getAll("scopes")
+        .flatMap((value) => String(value).split(/[\s,]+/))
         .filter(Boolean),
     );
+    if (scopes.length === 0) return { error: "Choose at least one scope" };
     const days = Number(formData.get("days") ?? 0);
-    const repositories = String(formData.get("repositories") ?? "")
-      .split(/[\s,]+/)
+    const repositories = formData
+      .getAll("repositories")
+      .flatMap((value) => String(value).split(/[\s,]+/))
       .filter(Boolean);
     const minted = await services.createToken(actor, {
       name: String(formData.get("name") ?? "token"),
@@ -72,7 +75,8 @@ export async function openPullAction(formData: FormData) {
     redirect(`/${owner}/${name}/pull/${pr.number}`);
   } catch (error) {
     if (!(error instanceof ForgeError)) throw error;
-    redirect(`/${owner}/${name}/pulls?error=${encodeURIComponent(error.message)}`);
+    const head = encodeURIComponent(String(formData.get("head") ?? ""));
+    redirect(`/${owner}/${name}/pulls/new?head=${head}&error=${encodeURIComponent(error.message)}`);
   }
 }
 
@@ -97,10 +101,26 @@ export async function commentAction(formData: FormData) {
   const name = String(formData.get("repo") ?? "");
   const number = Number(formData.get("number") ?? 0);
   const { services, actor } = await requireOrganization();
+  const line = Number(formData.get("line")) || null;
   await services.commentOnPullRequest(actor, owner, name, number, {
     path: String(formData.get("path") ?? "README.md"),
     body: String(formData.get("body") ?? ""),
+    line,
   });
+  redirect(`/${owner}/${name}/pull/${number}${line ? "?tab=files" : ""}`);
+}
+
+export async function closePullAction(formData: FormData) {
+  const owner = String(formData.get("owner") ?? "");
+  const name = String(formData.get("repo") ?? "");
+  const number = Number(formData.get("number") ?? 0);
+  const { services, actor } = await requireOrganization();
+  try {
+    await services.closePullRequest(actor, owner, name, number);
+  } catch (error) {
+    if (!(error instanceof ForgeError)) throw error;
+    redirect(`/${owner}/${name}/pull/${number}?error=${encodeURIComponent(error.message)}`);
+  }
   redirect(`/${owner}/${name}/pull/${number}`);
 }
 

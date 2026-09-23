@@ -1,18 +1,25 @@
-import Link from "next/link";
-
 import { SignInForm } from "@/components/auth-forms";
-import { Shell } from "@/components/shell";
+import { AuthShell } from "@/components/shell";
 
-export default function SignUpPage() {
+export const metadata = { title: "Create an account" };
+
+export default async function SignUpPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next } = await searchParams;
+  const query = next ? `?next=${encodeURIComponent(next)}` : "";
   return (
-    <Shell host="forgit">
-      <div className="sheet-head">
-        <h1>Create an account</h1>
-        <p className="muted">
-          Already have one? <Link href="/sign-in">Sign in</Link>
-        </p>
+    <AuthShell>
+      <div className="auth-card">
+        <h1>Create your account</h1>
+        <p>Host your repositories on your own Cloudflare account.</p>
+        <SignInForm mode="sign-up" next={next} />
       </div>
-      <SignInForm mode="sign-up" />
-    </Shell>
+      <p className="auth-switch">
+        Already have an account? <a href={`/sign-in${query}`}>Sign in</a>
+      </p>
+    </AuthShell>
   );
 }

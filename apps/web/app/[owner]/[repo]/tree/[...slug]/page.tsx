@@ -1,10 +1,21 @@
-import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
-import { RepoNav, Shell } from "@/components/shell";
+import { RepoHeader } from "@/components/repo";
+import { Shell } from "@/components/shell";
 import { loadGit } from "@/lib/git-view";
 import { resolveSlug } from "@/lib/ref-path";
-import { requireOrganization } from "@/lib/session";
+import { loadRepoPage } from "@/lib/repo-page";
+
+import { CodeBrowser } from "../../code";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ owner: string; repo: string; slug: string[] }>;
+}) {
+  const { owner, repo, slug } = await params;
+  return { title: `${slug.slice(1).join("/") || slug[0]} · ${owner}/${repo}` };
+}
 
 export default async function TreePage({
   params,
@@ -12,55 +23,31 @@ export default async function TreePage({
   params: Promise<{ owner: string; repo: string; slug: string[] }>;
 }) {
   const { owner, repo: name, slug } = await params;
-  const { services, actor, user } = await requireOrganization();
-  const loaded = await services.requireRepo(actor, owner, name, "read").catch(() => null);
-  if (!loaded) notFound();
-  const { ref, path } = await resolveSlug(
+  const { services, user, organization, repo } = await loadRepoPage(owner, name);
+  const { ref, path, branches, tags } = await resolveSlug(
     services.git,
     owner,
     name,
     slug,
-    loaded.repo.defaultBranch,
+    repo.defaultBranch,
   );
   const listed = await loadGit(() => services.git.tree(owner, name, ref, path));
-  if ("message" in listed) {
-    const host = (await headers()).get("host") ?? owner;
-    return (
-      <Shell host={host} login={user.login}>
-        <div className="sheet-head">
-          <h1>{path || name}</h1>
-        </div>
-        <RepoNav owner={owner} name={name} current="Code" />
-        <p className="error">{listed.message}</p>
-      </Shell>
-    );
-  }
-  const tree = listed.value;
-  if (!tree) notFound();
-  const host = (await headers()).get("host") ?? owner;
+  if ("value" in listed && !listed.value) notFound();
   return (
-    <Shell host={host} login={user.login}>
-      <div className="sheet-head">
-        <h1>{path || name}</h1>
-        <p className="sha">
-          {ref} {tree.sha.slice(0, 12)}
-        </p>
+    <Shell organization={organization} user={user}>
+      <RepoHeader current="Code" owner={owner} repo={repo} />
+      <div className="container page">
+        <CodeBrowser
+          branches={branches}
+          error={"message" in listed ? listed.message : null}
+          name={name}
+          owner={owner}
+          path={path}
+          refName={ref}
+          tags={tags}
+          tree={"value" in listed ? listed.value : null}
+        />
       </div>
-      <RepoNav owner={owner} name={name} current="Code" />
-      {tree.entries.map((entry) => {
-        const next = path ? `${path}/${entry.name}` : entry.name;
-        const href =
-          entry.type === "tree"
-            ? `/${owner}/${name}/tree/${ref}/${next}`
-            : `/${owner}/${name}/blob/${ref}/${next}`;
-        return (
-          <a className="file" href={href} key={entry.name}>
-            <span>{entry.type}</span>
-            <span>{entry.name}</span>
-            <span />
-          </a>
-        );
-      })}
     </Shell>
   );
 }

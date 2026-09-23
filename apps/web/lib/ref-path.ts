@@ -22,6 +22,7 @@ export function splitRefPath(
   return { ref: slug[0] ?? fallback, path: slug.slice(1).join("/") };
 }
 
+/** Resolves the slug and returns the ref names it was resolved against, for ref pickers. */
 export async function resolveSlug(
   git: RefLister,
   owner: string,
@@ -29,11 +30,11 @@ export async function resolveSlug(
   slug: readonly string[],
   fallback: string,
 ) {
-  const branches = await loadGit(() => git.branches(owner, name));
-  const tags = await loadGit(() => git.tags(owner, name));
-  const names = [
-    ...("value" in branches ? branches.value : []),
-    ...("value" in tags ? tags.value : []),
-  ].map((ref) => ref.name);
-  return splitRefPath(slug, names, fallback);
+  const [branchList, tagList] = await Promise.all([
+    loadGit(() => git.branches(owner, name)),
+    loadGit(() => git.tags(owner, name)),
+  ]);
+  const branches = ("value" in branchList ? branchList.value : []).map((ref) => ref.name);
+  const tags = ("value" in tagList ? tagList.value : []).map((ref) => ref.name);
+  return { ...splitRefPath(slug, [...branches, ...tags], fallback), branches, tags };
 }

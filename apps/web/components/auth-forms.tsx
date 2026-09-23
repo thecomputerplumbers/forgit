@@ -1,15 +1,33 @@
 "use client";
 
-import { organizationClient } from "better-auth/client/plugins";
-import { createAuthClient } from "better-auth/react";
 import { useState } from "react";
 
-const authClient = createAuthClient({ plugins: [organizationClient()] });
+import { authClient } from "@/lib/auth-client";
 
-export function SignInForm({ mode }: { mode: "sign-in" | "sign-up" }) {
+import { CopyField } from "./client";
+import { Icon } from "./icons";
+
+function FormError({ message }: { message: string | null }) {
+  if (!message) return null;
+  return (
+    <div className="alert alert-danger" role="alert">
+      <Icon name="alert" />
+      <div>{message}</div>
+    </div>
+  );
+}
+
+/** Only same-origin paths, so a crafted link cannot bounce a new session elsewhere. */
+export function safeNext(next: string | undefined): string {
+  return next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
+}
+
+export function SignInForm({ mode, next }: { mode: "sign-in" | "sign-up"; next?: string }) {
   const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
   async function submit(formData: FormData) {
     setError(null);
+    setPending(true);
     const email = String(formData.get("email") ?? "");
     const password = String(formData.get("password") ?? "");
     const result =
@@ -22,24 +40,31 @@ export function SignInForm({ mode }: { mode: "sign-in" | "sign-up" }) {
           });
     if (result.error) {
       setError(result.error.message ?? "Authentication failed");
+      setPending(false);
       return;
     }
-    window.location.href = "/";
+    window.location.href = safeNext(next);
   }
   return (
-    <form action={submit} className="stack">
+    <form action={submit} className="form">
       {mode === "sign-up" ? (
-        <label>
-          Name
-          <input name="name" required autoComplete="name" />
+        <label className="field">
+          <span className="field-label">Full name</span>
+          <input name="name" required autoComplete="name" placeholder="Ada Lovelace" />
         </label>
       ) : null}
-      <label>
-        Email
-        <input name="email" type="email" required autoComplete="email" />
+      <label className="field">
+        <span className="field-label">Email</span>
+        <input
+          name="email"
+          type="email"
+          required
+          autoComplete="email"
+          placeholder="you@company.com"
+        />
       </label>
-      <label>
-        Password
+      <label className="field">
+        <span className="field-label">Password</span>
         <input
           name="password"
           type="password"
@@ -47,68 +72,166 @@ export function SignInForm({ mode }: { mode: "sign-in" | "sign-up" }) {
           minLength={8}
           autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
         />
+        {mode === "sign-up" ? <span className="field-hint">At least 8 characters.</span> : null}
       </label>
-      {error ? <p className="error">{error}</p> : null}
-      <button type="submit">{mode === "sign-in" ? "Sign in" : "Create account"}</button>
+      <FormError message={error} />
+      <button className="btn btn-primary btn-block" disabled={pending} type="submit">
+        {pending ? "Please wait…" : mode === "sign-in" ? "Sign in" : "Create account"}
+      </button>
     </form>
   );
 }
 
-export function CreateOrganizationForm() {
+function toSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 39);
+}
+
+export function CreateOrganizationForm({ host }: { host: string }) {
   const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+  const [slugEdited, setSlugEdited] = useState(false);
+  const shownSlug = slugEdited ? slug : toSlug(name);
   async function submit(formData: FormData) {
     setError(null);
-    const name = String(formData.get("name") ?? "");
-    const slug = String(formData.get("slug") ?? "");
-    const result = await authClient.organization.create({ name, slug });
+    setPending(true);
+    const result = await authClient.organization.create({
+      name: String(formData.get("name") ?? ""),
+      slug: String(formData.get("slug") ?? ""),
+    });
     if (result.error) {
       setError(result.error.message ?? "Could not create the organization");
+      setPending(false);
       return;
     }
     if (result.data) await authClient.organization.setActive({ organizationId: result.data.id });
     window.location.href = "/";
   }
   return (
-    <form action={submit} className="stack">
-      <label>
-        Organization name
-        <input name="name" required />
+    <form action={submit} className="form">
+      <label className="field">
+        <span className="field-label">Organization name</span>
+        <input
+          name="name"
+          onChange={(event) => setName(event.target.value)}
+          placeholder="Acme Inc."
+          required
+          value={name}
+        />
       </label>
-      <label>
-        Slug
-        <input name="slug" required pattern="[a-z0-9][a-z0-9-]{0,38}" />
+      <label className="field">
+        <span className="field-label">URL slug</span>
+        <input
+          name="slug"
+          onChange={(event) => {
+            setSlugEdited(true);
+            setSlug(event.target.value);
+          }}
+          pattern="[a-z0-9][a-z0-9\-]{0,38}"
+          placeholder="acme"
+          required
+          value={shownSlug}
+        />
+        <span className="field-hint">
+          Lowercase letters, numbers, and dashes. Clone URLs look like{" "}
+          <code>
+            {host}/{shownSlug || "acme"}/repo.git
+          </code>
+        </span>
       </label>
-      {error ? <p className="error">{error}</p> : null}
-      <button type="submit">Create organization</button>
+      <FormError message={error} />
+      <button className="btn btn-primary btn-block" disabled={pending} type="submit">
+        {pending ? "Creating…" : "Create organization"}
+      </button>
     </form>
   );
 }
 
-export function InviteForm() {
-  const [message, setMessage] = useState<string | null>(null);
+export function InviteForm({ origin }: { origin: string }) {
+  const [error, setError] = useState<string | null>(null);
+  const [link, setLink] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
   async function submit(formData: FormData) {
-    setMessage(null);
+    setError(null);
+    setLink(null);
+    setPending(true);
     const email = String(formData.get("email") ?? "");
     const result = await authClient.organization.inviteMember({ email, role: "member" });
+    setPending(false);
     if (result.error) {
-      setMessage(result.error.message ?? "Invite failed");
+      setError(result.error.message ?? "Invite failed");
       return;
     }
     const id = result.data?.id;
-    setMessage(
-      id
-        ? `Invitation ${id}. They can open /invitations/${id} after signing in.`
-        : "Invitation sent.",
-    );
+    setLink(id ? `${origin}/invitations/${id}` : "");
   }
   return (
-    <form action={submit} className="stack">
-      <label>
-        Email
-        <input name="email" type="email" required />
-      </label>
-      {message ? <p>{message}</p> : null}
-      <button type="submit">Invite member</button>
-    </form>
+    <div className="stack">
+      <form action={submit} className="row">
+        <input
+          aria-label="Email address"
+          name="email"
+          placeholder="teammate@company.com"
+          required
+          style={{ flex: 1, minWidth: 220 }}
+          type="email"
+        />
+        <button className="btn btn-primary" disabled={pending} type="submit">
+          <Icon name="plus" /> {pending ? "Inviting…" : "Invite"}
+        </button>
+      </form>
+      <FormError message={error} />
+      {link !== null ? (
+        <div className="secret">
+          <div className="secret-title">
+            <Icon name="checkCircle" /> Invitation created
+          </div>
+          {link ? (
+            <>
+              <p>Send this link. They open it after signing in to join the organization.</p>
+              <CopyField label="Invitation link" value={link} />
+            </>
+          ) : (
+            <p>The invitation was sent.</p>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export function AcceptInvitation({ id }: { id: string }) {
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  async function accept() {
+    setError(null);
+    setPending(true);
+    const result = await authClient.organization.acceptInvitation({ invitationId: id });
+    if (result.error) {
+      setError(result.error.message ?? "Could not accept the invitation");
+      setPending(false);
+      return;
+    }
+    const organizationId = result.data?.invitation.organizationId;
+    if (organizationId) await authClient.organization.setActive({ organizationId });
+    window.location.href = "/";
+  }
+  return (
+    <div className="form">
+      <FormError message={error} />
+      <button
+        className="btn btn-primary btn-block"
+        disabled={pending}
+        onClick={accept}
+        type="button"
+      >
+        {pending ? "Joining…" : "Accept invitation"}
+      </button>
+    </div>
   );
 }

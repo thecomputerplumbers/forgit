@@ -1,57 +1,128 @@
-import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
-import { RepoNav, Shell } from "@/components/shell";
+import { CopyButton } from "@/components/client";
+import { Tokens } from "@/components/code";
+import { Icon } from "@/components/icons";
+import { Markdown } from "@/components/markdown";
+import { PathCrumbs, RefPicker, RepoHeader } from "@/components/repo";
+import { Shell } from "@/components/shell";
+import { Alert, Box, EmptyState } from "@/components/ui";
+import { formatBytes, plural } from "@/lib/format";
 import { loadGit } from "@/lib/git-view";
+import { highlightLines, languageForPath } from "@/lib/highlight";
 import { resolveSlug } from "@/lib/ref-path";
-import { requireOrganization } from "@/lib/session";
+import { loadRepoPage } from "@/lib/repo-page";
 
-export default async function BlobPage({
+export async function generateMetadata({
   params,
 }: {
   params: Promise<{ owner: string; repo: string; slug: string[] }>;
 }) {
+  const { owner, repo, slug } = await params;
+  return { title: `${slug.at(-1)} · ${owner}/${repo}` };
+}
+
+export default async function BlobPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ owner: string; repo: string; slug: string[] }>;
+  searchParams: Promise<{ plain?: string }>;
+}) {
   const { owner, repo: name, slug } = await params;
-  const { services, actor, user } = await requireOrganization();
-  const loaded = await services.requireRepo(actor, owner, name, "read").catch(() => null);
-  if (!loaded) notFound();
-  const { ref, path } = await resolveSlug(
+  const { plain } = await searchParams;
+  const { services, user, organization, repo } = await loadRepoPage(owner, name);
+  const { ref, path, branches, tags } = await resolveSlug(
     services.git,
     owner,
     name,
     slug,
-    loaded.repo.defaultBranch,
+    repo.defaultBranch,
   );
   const listed = await loadGit(() => services.git.blob(owner, name, ref, path));
-  if ("message" in listed) {
-    const host = (await headers()).get("host") ?? owner;
-    return (
-      <Shell host={host} login={user.login}>
-        <div className="sheet-head">
-          <h1>{path || name}</h1>
-        </div>
-        <RepoNav owner={owner} name={name} current="Code" />
-        <p className="error">{listed.message}</p>
-      </Shell>
-    );
-  }
-  const blob = listed.value;
-  if (!blob) notFound();
-  const host = (await headers()).get("host") ?? owner;
+  if ("value" in listed && !listed.value) notFound();
+  const blob = "value" in listed ? listed.value : null;
+  const lines = blob?.contents
+    ? highlightLines(blob.contents.replace(/\n$/, ""), languageForPath(path))
+    : [];
+  const markdown = /\.(md|markdown)$/i.test(path);
+  const preview = markdown && plain !== "1";
+  const dir = path.split("/").slice(0, -1).join("/");
+  const self = `/${owner}/${name}/blob/${ref}/${path}`;
   return (
-    <Shell host={host} login={user.login}>
-      <div className="sheet-head">
-        <h1>{blob.name}</h1>
-        <p className="sha">
-          {path} · {blob.size} bytes
-        </p>
+    <Shell organization={organization} user={user}>
+      <RepoHeader current="Code" owner={owner} repo={repo} />
+      <div className="container page">
+        <div className="toolbar">
+          <RefPicker
+            branches={branches}
+            current={ref}
+            hrefFor={(next) => `/${owner}/${name}/blob/${next}/${path}`}
+            tags={tags}
+          />
+          <PathCrumbs name={name} owner={owner} path={path} refName={ref} />
+          <span className="spacer" />
+          <CopyButton label="Copy path" value={path} />
+        </div>
+        {"message" in listed ? (
+          <Alert title="Git storage did not answer">{listed.message}</Alert>
+        ) : null}
+        {blob ? (
+          <Box
+            actions={
+              markdown ? (
+                <nav aria-label="View" className="segmented">
+                  <a aria-current={preview ? "page" : undefined} href={self}>
+                    <Icon name="eye" /> Preview
+                  </a>
+                  <a aria-current={preview ? undefined : "page"} href={`${self}?plain=1`}>
+                    <Icon name="code" /> Code
+                  </a>
+                </nav>
+              ) : blob.contents !== null ? (
+                <CopyButton label="Copy file contents" value={blob.contents} />
+              ) : null
+            }
+            flush
+            title={
+              <span className="blob-head">
+                {blob.contents !== null ? <span>{plural(lines.length, "line")}</span> : null}
+                <span>{formatBytes(blob.size)}</span>
+                <code className="sha-chip" title={blob.sha}>
+                  {blob.sha.slice(0, 7)}
+                </code>
+              </span>
+            }
+          >
+            {blob.contents === null ? (
+              <EmptyState icon="file" title="Binary file">
+                This file is {formatBytes(blob.size)} and can't be shown as text.
+              </EmptyState>
+            ) : preview ? (
+              <div style={{ padding: "24px 32px" }}>
+                <Markdown dir={dir} root={`/${owner}/${name}/blob/${ref}`} source={blob.contents} />
+              </div>
+            ) : (
+              <div className="code-scroll">
+                <table className="code-table">
+                  <tbody>
+                    {lines.map((line, index) => (
+                      <tr id={`L${index + 1}`} key={index}>
+                        <td className="ln">
+                          <a href={`#L${index + 1}`}>{index + 1}</a>
+                        </td>
+                        <td>
+                          <Tokens tokens={line} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Box>
+        ) : null}
       </div>
-      <RepoNav owner={owner} name={name} current="Code" />
-      {blob.contents ? (
-        <pre className="pad readme">{blob.contents}</pre>
-      ) : (
-        <p className="pad">Binary file.</p>
-      )}
     </Shell>
   );
 }

@@ -1,9 +1,22 @@
-import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
-import { Patch, RepoNav, Shell } from "@/components/shell";
+import { CopyButton } from "@/components/client";
+import { DiffView } from "@/components/diff";
+import { Icon } from "@/components/icons";
+import { RepoHeader } from "@/components/repo";
+import { Shell } from "@/components/shell";
+import { Alert, Avatar, Box, Sha, TimeAgo } from "@/components/ui";
 import { loadGit } from "@/lib/git-view";
-import { requireOrganization } from "@/lib/session";
+import { loadRepoPage } from "@/lib/repo-page";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ owner: string; repo: string; sha: string }>;
+}) {
+  const { owner, repo, sha } = await params;
+  return { title: `${sha.slice(0, 7)} · ${owner}/${repo}` };
+}
 
 export default async function CommitPage({
   params,
@@ -11,36 +24,60 @@ export default async function CommitPage({
   params: Promise<{ owner: string; repo: string; sha: string }>;
 }) {
   const { owner, repo: name, sha } = await params;
-  const { services, actor, user } = await requireOrganization();
-  const loaded = await services.requireRepo(actor, owner, name, "read").catch(() => null);
-  if (!loaded) notFound();
+  const { services, user, organization, repo } = await loadRepoPage(owner, name);
   const listed = await loadGit(() => services.git.commit(owner, name, sha));
-  if ("message" in listed) {
-    const host = (await headers()).get("host") ?? owner;
-    return (
-      <Shell host={host} login={user.login}>
-        <div className="sheet-head">
-          <h1>{sha}</h1>
-        </div>
-        <RepoNav owner={owner} name={name} current="Commits" />
-        <p className="error">{listed.message}</p>
-      </Shell>
-    );
-  }
-  const detail = listed.value;
-  if (!detail) notFound();
-  const host = (await headers()).get("host") ?? owner;
+  if ("value" in listed && !listed.value) notFound();
+  const detail = "value" in listed ? listed.value : null;
   return (
-    <Shell host={host} login={user.login}>
-      <div className="sheet-head">
-        <h1>{detail.commit.subject}</h1>
-        <p className="muted">
-          {detail.commit.author} · <span className="sha">{detail.commit.sha}</span>
-        </p>
-        {detail.commit.body ? <pre className="readme">{detail.commit.body}</pre> : null}
+    <Shell organization={organization} user={user}>
+      <RepoHeader current="Commits" owner={owner} repo={repo} />
+      <div className="container page stack">
+        {"message" in listed ? (
+          <Alert title="Git storage did not answer">{listed.message}</Alert>
+        ) : null}
+        {detail ? (
+          <>
+            <Box>
+              <div className="commit-hero">
+                <div className="row" style={{ alignItems: "flex-start" }}>
+                  <h1 style={{ flex: 1 }}>{detail.commit.subject}</h1>
+                  <a className="btn btn-sm" href={`/${owner}/${name}/tree/${detail.commit.sha}`}>
+                    <Icon name="code" /> Browse files
+                  </a>
+                </div>
+                {detail.commit.body ? (
+                  <pre className="commit-body">{detail.commit.body}</pre>
+                ) : null}
+                <div className="commit-hero-meta">
+                  <Avatar name={detail.commit.author} size={22} />
+                  <strong title={detail.commit.authorEmail}>{detail.commit.author}</strong>
+                  committed <TimeAgo value={detail.commit.authorDate} />
+                  <span className="spacer" />
+                  {detail.commit.parents.length ? (
+                    <span className="row" style={{ gap: 6 }}>
+                      {detail.commit.parents.length === 1 ? "Parent" : "Parents"}
+                      {detail.commit.parents.map((parent) => (
+                        <Sha
+                          href={`/${owner}/${name}/commit/${parent}`}
+                          key={parent}
+                          sha={parent}
+                        />
+                      ))}
+                    </span>
+                  ) : (
+                    <span>Root commit</span>
+                  )}
+                  <span className="row" style={{ gap: 2 }}>
+                    Commit <code className="sha-chip">{detail.commit.sha.slice(0, 12)}</code>
+                    <CopyButton label="Copy full SHA" value={detail.commit.sha} />
+                  </span>
+                </div>
+              </div>
+            </Box>
+            <DiffView patch={detail.patch} />
+          </>
+        ) : null}
       </div>
-      <RepoNav owner={owner} name={name} current="Commits" />
-      <Patch patch={detail.patch} />
     </Shell>
   );
 }

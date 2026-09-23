@@ -1,9 +1,23 @@
-import { headers } from "next/headers";
-import { notFound } from "next/navigation";
-
-import { RepoNav, Shell } from "@/components/shell";
+import { CodeBlock, CopyField } from "@/components/client";
+import { Icon } from "@/components/icons";
+import { RepoHeader } from "@/components/repo";
+import { Shell } from "@/components/shell";
+import { Alert, Box, EmptyState } from "@/components/ui";
 import { loadGit } from "@/lib/git-view";
-import { requireOrganization } from "@/lib/session";
+import { plural } from "@/lib/format";
+import { resolveSlug } from "@/lib/ref-path";
+import { loadRepoPage } from "@/lib/repo-page";
+
+import { CodeBrowser } from "./code";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ owner: string; repo: string }>;
+}) {
+  const { owner, repo } = await params;
+  return { title: `${owner}/${repo}` };
+}
 
 export default async function RepositoryPage({
   params,
@@ -11,14 +25,15 @@ export default async function RepositoryPage({
   params: Promise<{ owner: string; repo: string }>;
 }) {
   const { owner, repo: name } = await params;
-  const { services, actor, user } = await requireOrganization();
-  const loaded = await services.requireRepo(actor, owner, name, "read").catch(() => null);
-  if (!loaded) notFound();
-  const summaryResult = await loadGit(() => services.git.summary(owner, name));
+  const { services, user, organization, repo } = await loadRepoPage(owner, name);
+  const [summaryResult, refs, openPulls] = await Promise.all([
+    loadGit(() => services.git.summary(owner, name)),
+    resolveSlug(services.git, owner, name, [], repo.defaultBranch),
+    services.store.listPullRequests(repo.id, "open"),
+  ]);
   const summary = "value" in summaryResult ? summaryResult.value : null;
-  const treeResult = summary?.head
-    ? await loadGit(() => services.git.tree(owner, name, summary.head?.name ?? "", ""))
-    : null;
+  const head = summary?.head?.name ?? null;
+  const treeResult = head ? await loadGit(() => services.git.tree(owner, name, head, "")) : null;
   const tree = treeResult && "value" in treeResult ? treeResult.value : null;
   const gitMessage =
     "message" in summaryResult
@@ -26,54 +41,108 @@ export default async function RepositoryPage({
       : treeResult && "message" in treeResult
         ? treeResult.message
         : null;
-  const host = (await headers()).get("host") ?? owner;
   const clone = services.cloneUrl(owner, name);
-  const authed = clone.replace("://", "://git@");
-  return (
-    <Shell host={host} login={user.login}>
-      <div className="sheet-head">
-        <h1>
-          {owner}/{name}
-        </h1>
-        <p className="muted">{loaded.repo.description || "No description"}</p>
-      </div>
-      <RepoNav owner={owner} name={name} current="Code" />
-      <p className="pad clone">git clone {authed}</p>
-      <p className="pad muted">When Git asks for a password, paste a personal access token.</p>
-      {gitMessage ? <p className="error">{gitMessage}</p> : null}
-      {!gitMessage && !summary?.head ? (
-        <div className="pad">
-          <p>
-            This repository has no commits yet. Push the default branch {loaded.repo.defaultBranch}{" "}
-            over HTTPS.
-          </p>
-          <pre className="clone">{`git remote add origin ${authed}\ngit push -u origin ${loaded.repo.defaultBranch}`}</pre>
+  const about = (
+    <Box>
+      <div className="about">
+        <div className="about-section">
+          <h2>About</h2>
+          <p>{repo.description || <span className="muted">No description provided.</span>}</p>
+          <ul className="about-list">
+            <li>
+              <Icon name={repo.visibility === "public" ? "globe" : "lock"} />
+              {repo.visibility === "public" ? "Public" : "Private"} repository
+            </li>
+            <li>
+              <Icon name="shieldCheck" />
+              <span>
+                <code>{repo.defaultBranch}</code> is protected
+              </span>
+            </li>
+            {summary ? (
+              <>
+                <li>
+                  <Icon name="branch" />
+                  <a href={`/${owner}/${name}/branches`}>
+                    {plural(summary.branches, "branch", "branches")}
+                  </a>
+                </li>
+                <li>
+                  <Icon name="tag" />
+                  <a href={`/${owner}/${name}/tags`}>{plural(summary.tags, "tag")}</a>
+                </li>
+              </>
+            ) : null}
+          </ul>
         </div>
-      ) : summary?.head ? (
-        <>
-          {tree?.entries.map((entry) => (
-            <a
-              className="file"
-              href={
-                entry.type === "tree"
-                  ? `/${owner}/${name}/tree/${summary.head?.name}/${entry.name}`
-                  : `/${owner}/${name}/blob/${summary.head?.name}/${entry.name}`
-              }
-              key={entry.name}
-            >
-              <span>{entry.type}</span>
-              <span>{entry.name}</span>
-              <span className="sha">{entry.type === "blob" ? `${entry.size} B` : ""}</span>
-            </a>
-          ))}
-          {tree?.readme ? (
-            <div className="pad">
-              <h2>{tree.readme.name}</h2>
-              <pre className="readme">{tree.readme.contents}</pre>
-            </div>
-          ) : null}
-        </>
-      ) : null}
+        <div className="about-section">
+          <h3>Clone</h3>
+          <CopyField label="HTTPS clone URL" value={clone} />
+          <p className="about-hint">
+            Use a <a href="/settings/tokens">personal access token</a> as the password.
+          </p>
+        </div>
+      </div>
+    </Box>
+  );
+  return (
+    <Shell organization={organization} user={user}>
+      <RepoHeader current="Code" openPulls={openPulls.length} owner={owner} repo={repo} />
+      <div className="container page">
+        {repo.archived ? (
+          <div style={{ marginBottom: 16 }}>
+            <Alert title="This repository is archived" tone="warning">
+              It is read-only. Pushes, pull requests, and settings changes are disabled.
+            </Alert>
+          </div>
+        ) : null}
+        {gitMessage && !summary ? (
+          <Alert title="Git storage did not answer">{gitMessage}</Alert>
+        ) : !head ? (
+          <div className="layout-sidebar">
+            <Box flush>
+              <EmptyState icon="terminal" title="This repository is empty">
+                Push an existing project or start a new one from the command line.
+              </EmptyState>
+              <div className="stack" style={{ padding: "0 24px 24px" }}>
+                <div>
+                  <p className="field-label" style={{ marginBottom: 8 }}>
+                    Push an existing repository
+                  </p>
+                  <CodeBlock
+                    code={`git remote add origin ${clone}\ngit push -u origin ${repo.defaultBranch}`}
+                  />
+                </div>
+                <div>
+                  <p className="field-label" style={{ marginBottom: 8 }}>
+                    Start a new repository
+                  </p>
+                  <CodeBlock
+                    code={`echo "# ${name}" > README.md\ngit init -b ${repo.defaultBranch}\ngit add README.md\ngit commit -m "Initial commit"\ngit remote add origin ${clone}\ngit push -u origin ${repo.defaultBranch}`}
+                  />
+                </div>
+                <p className="muted">
+                  When Git asks for a password, paste a{" "}
+                  <a href="/settings/tokens">personal access token</a>.
+                </p>
+              </div>
+            </Box>
+            <aside>{about}</aside>
+          </div>
+        ) : (
+          <CodeBrowser
+            aside={about}
+            branches={refs.branches}
+            error={gitMessage}
+            name={name}
+            owner={owner}
+            path=""
+            refName={head}
+            tags={refs.tags}
+            tree={tree}
+          />
+        )}
+      </div>
     </Shell>
   );
 }

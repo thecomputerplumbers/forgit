@@ -1,18 +1,25 @@
-import Link from "next/link";
-
 import { SignInForm } from "@/components/auth-forms";
-import { Shell } from "@/components/shell";
+import { AuthShell } from "@/components/shell";
 
-export default function SignInPage() {
+export const metadata = { title: "Sign in" };
+
+export default async function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next } = await searchParams;
+  const query = next ? `?next=${encodeURIComponent(next)}` : "";
   return (
-    <Shell host="forgit">
-      <div className="sheet-head">
-        <h1>Sign in</h1>
-        <p className="muted">
-          New here? <Link href="/sign-up">Create an account</Link>
-        </p>
+    <AuthShell>
+      <div className="auth-card">
+        <h1>Sign in to forgit</h1>
+        <p>Welcome back. Enter your details to continue.</p>
+        <SignInForm mode="sign-in" next={next} />
       </div>
-      <SignInForm mode="sign-in" />
-    </Shell>
+      <p className="auth-switch">
+        New here? <a href={`/sign-up${query}`}>Create an account</a>
+      </p>
+    </AuthShell>
   );
 }

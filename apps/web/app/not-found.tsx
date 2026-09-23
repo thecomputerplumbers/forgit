@@ -1,10 +1,15 @@
+import { AuthShell } from "@/components/shell";
+
 export default function NotFound() {
   return (
-    <main className="sheet">
-      <div className="sheet-head">
-        <h1>Not found</h1>
-        <p className="muted">That repository, ref, or page is not on this instance.</p>
+    <AuthShell>
+      <div className="auth-card">
+        <h1>Page not found</h1>
+        <p>That repository, ref, or page is not on this instance, or you don't have access.</p>
+        <a className="btn btn-primary btn-block" href="/">
+          Back to repositories
+        </a>
       </div>
-    </main>
+    </AuthShell>
   );
 }
