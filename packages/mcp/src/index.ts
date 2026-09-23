@@ -349,8 +349,7 @@ async function callTool(
       const existing = await services.store.getPullRequest(row.id, Number(args.pullNumber));
       if (!existing) throw new ForgeError("Pull request not found", 404, "not_found");
       if (args.state === "closed") {
-        const closed = await services.store.closePullRequest(existing.id, services.store.now());
-        if (!closed) throw new ForgeError("Pull request is not open", 409, "not_open");
+        const closed = await services.closePullRequest(actor, owner, repo, existing.number);
         return { number: closed.number, state: closed.state };
       }
       const updated = await services.store.updatePullRequestText(existing.id, {

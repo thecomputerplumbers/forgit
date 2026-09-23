@@ -6,6 +6,7 @@ export type {
   GitCommit,
   GitCommitDetail,
   GitCompare,
+  GitEntry,
   GitFileChange,
   GitRef,
   GitSummary,

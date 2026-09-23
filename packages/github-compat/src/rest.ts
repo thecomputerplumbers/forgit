@@ -371,11 +371,7 @@ async function repoRoute(
     if (!existing) return json({ message: "Not Found" }, 404);
     const body = (await request.json()) as { title?: string; body?: string; state?: string };
     if (body.state === "closed" && existing.state === "open") {
-      const closed = await ctx.services.store.closePullRequest(
-        existing.id,
-        ctx.services.store.now(),
-      );
-      if (!closed) throw new ForgeError("Pull request is not open", 409, "not_open");
+      const closed = await ctx.services.closePullRequest(actor, owner, name, existing.number);
       return json(prBody(ctx, owner, name, closed, await authorLogin(ctx, closed.authorId)));
     }
     const updated = await ctx.services.store.updatePullRequestText(existing.id, {

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { ForgeError } from "@forgit/domain";
+import { evaluateMergePolicy, ForgeError } from "@forgit/domain";
 
 import { world } from "./fixture.ts";
 
@@ -159,6 +159,99 @@ describe("pull requests", () => {
         services.mergePullRequest(alice, "acme", "widget", 1, { expectedHeadSha: "a".repeat(40) }),
       (error: unknown) => error instanceof ForgeError && error.code === "stale_head",
     );
+  });
+
+  it("closes an open pull request once, for writers only, and records it", async () => {
+    const { services, git, store, bob, cara, repo } = await world();
+    git.commitFiles({
+      owner: "acme",
+      repo: "widget",
+      branch: "feature",
+      message: "wip",
+      files: { "NOTE.md": "draft\n" },
+    });
+    await services.openPullRequest(bob, "acme", "widget", {
+      title: "Draft",
+      sourceRef: "feature",
+      targetRef: "main",
+    });
+    await assert.rejects(() => services.closePullRequest(cara, "acme", "widget", 1));
+    const closed = await services.closePullRequest(bob, "acme", "widget", 1);
+    assert.equal(closed.state, "closed");
+    await assert.rejects(
+      () => services.closePullRequest(bob, "acme", "widget", 1),
+      (error: unknown) => error instanceof ForgeError && error.code === "not_open",
+    );
+    const audit = await store.listAudit(repo.id, 20);
+    assert.ok(audit.some((event) => event.action === "pull_request.close"));
+  });
+
+  it("reports merge readiness in the order the merge enforces it", () => {
+    const rules = {
+      repositoryId: "r",
+      requiredApprovals: 1,
+      requiredChecks: ["ci", "lint"],
+      dismissStaleReviews: true,
+    };
+    const pr = { authorId: "bob", headSha: "head" };
+    const review = (
+      authorId: string,
+      state: "approved" | "changes_requested",
+      headSha = "head",
+    ) => ({
+      id: `${authorId}-${state}-${headSha}`,
+      pullRequestId: "p",
+      authorId,
+      headSha,
+      state,
+      body: "",
+      createdAt: 0,
+    });
+    const check = (name: string, conclusion: "success" | "failure" | null) => ({
+      id: name,
+      repositoryId: "r",
+      name,
+      headSha: "head",
+      status: conclusion ? ("completed" as const) : ("in_progress" as const),
+      conclusion,
+      title: "",
+      summary: "",
+      startedAt: 0,
+      completedAt: null,
+    });
+    const selfAndStale = evaluateMergePolicy(
+      rules,
+      pr,
+      [review("bob", "approved"), review("alice", "approved", "old")],
+      [],
+    );
+    assert.equal(selfAndStale.approvals, 0);
+    assert.equal(selfAndStale.blocker?.message, "Required approvals are missing");
+    const blocked = evaluateMergePolicy(
+      rules,
+      pr,
+      [review("alice", "approved"), review("cara", "changes_requested")],
+      [],
+    );
+    assert.equal(blocked.blocker?.message, "Changes have been requested");
+    const checks = evaluateMergePolicy(
+      rules,
+      pr,
+      [review("alice", "approved")],
+      [check("ci", "success"), check("lint", null)],
+    );
+    assert.deepEqual(
+      checks.checks.map((each) => each.state),
+      ["passed", "pending"],
+    );
+    assert.equal(checks.blocker?.message, "Required check lint has not passed");
+    const ready = evaluateMergePolicy(
+      rules,
+      pr,
+      [review("alice", "approved")],
+      [check("ci", "success"), check("lint", "success")],
+    );
+    assert.equal(ready.blocker, null);
   });
 });
 

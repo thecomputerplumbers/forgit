@@ -3,6 +3,7 @@ import { hashToken, safeEqual, tokenPrefix } from "@forgit/auth/crypto";
 import { assertRepoName, type GitClient } from "@forgit/git-client";
 import { signBody } from "@forgit/auth/crypto";
 
+import { evaluateMergePolicy } from "./merge-policy.ts";
 import { assertWebhookUrl } from "./webhook.ts";
 
 import type { ForgeStore, RepoAccess } from "./store.ts";
@@ -422,29 +423,13 @@ export function createServices(
       if (input.expectedHeadSha && input.expectedHeadSha !== pr.headSha) {
         throw new ForgeError("Head SHA moved", 409, "stale_head");
       }
-      const rules = await store.getRules(repo.id);
-      const reviews = await store.listReviews(pr.id);
-      const approvals = reviews.filter(
-        (review) =>
-          review.state === "approved" &&
-          (!rules.dismissStaleReviews || review.headSha === pr.headSha),
-      );
-      const uniqueApprovers = new Set(approvals.map((review) => review.authorId));
-      uniqueApprovers.delete(pr.authorId);
-      if (uniqueApprovers.size < rules.requiredApprovals) {
-        throw new ForgeError("Required approvals are missing", 409, "reviews");
-      }
-      const changes = reviews.filter(
-        (review) => review.state === "changes_requested" && review.headSha === pr.headSha,
-      );
-      if (changes.length > 0) throw new ForgeError("Changes have been requested", 409, "reviews");
-      const checks = await store.listChecks(repo.id, pr.headSha);
-      for (const checkName of rules.requiredChecks) {
-        const run = checks.find((check) => check.name === checkName);
-        if (!run || run.status !== "completed" || run.conclusion !== "success") {
-          throw new ForgeError(`Required check ${checkName} has not passed`, 409, "checks");
-        }
-      }
+      const [rules, reviews, checks] = await Promise.all([
+        store.getRules(repo.id),
+        store.listReviews(pr.id),
+        store.listChecks(repo.id, pr.headSha),
+      ]);
+      const { blocker } = evaluateMergePolicy(rules, pr, reviews, checks);
+      if (blocker) throw new ForgeError(blocker.message, 409, blocker.code);
       const author = await store.getUser(pr.authorId);
       const compared = await git.compare(org.slug, repo.name, pr.baseSha, pr.headSha);
       if (compared && !compared.mergeable) {
@@ -479,6 +464,19 @@ export function createServices(
         sha: result.sha,
       });
       return { sha: result.sha, pr: merged };
+    },
+
+    async closePullRequest(actor: Actor, owner: string, name: string, number: number) {
+      const { repo } = await requireRepo(actor, owner, name, "write");
+      if (!hasPullScope(actor, "pull_request:write"))
+        throw new ForgeError("Forbidden", 403, "forbidden");
+      const existing = await store.getPullRequest(repo.id, number);
+      if (!existing) throw new ForgeError("Pull request not found", 404, "not_found");
+      const closed = await store.closePullRequest(existing.id, store.now());
+      if (!closed) throw new ForgeError("Pull request is not open", 409, "not_open");
+      await audit(actor, "pull_request.close", repo.id, String(number), {});
+      await deliver(repo.id, "pull_request", { action: "closed", number });
+      return closed;
     },
 
     async recordCheck(

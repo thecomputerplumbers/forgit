@@ -145,6 +145,7 @@ const RESERVED = new Set([
   "sign-in",
   "sign-up",
   "onboarding",
+  "invitations",
   "healthz",
   "readyz",
   ".well-known",
