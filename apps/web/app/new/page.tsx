@@ -71,7 +71,7 @@ export default async function NewRepositoryPage({
             </fieldset>
             <hr />
             <div className="form-actions">
-              <button className="btn btn-primary" type="submit">
+              <button className="btn btn-primary" data-confetti type="submit">
                 Create repository
               </button>
               <a className="btn btn-ghost" href="/">

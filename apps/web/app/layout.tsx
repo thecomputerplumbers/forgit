@@ -1,7 +1,12 @@
 import type { Metadata, Viewport } from "next";
+import { cookies } from "next/headers";
 import type { ReactNode } from "react";
 
+import { ThemeEffects } from "@/components/theme";
+import { THEME_COOKIE, themeById } from "@/lib/themes";
+
 import "./globals.css";
+import "./themes.css";
 
 export const metadata: Metadata = {
   title: { default: "forgit", template: "%s · forgit" },
@@ -18,9 +23,10 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const theme = themeById((await cookies()).get(THEME_COOKIE)?.value);
   return (
-    <html lang="en">
+    <html data-theme={theme.id} lang="en">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
@@ -28,8 +34,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
           rel="stylesheet"
         />
+        {theme.fonts ? (
+          <link href={theme.fonts} id={`theme-font-${theme.id}`} rel="stylesheet" />
+        ) : null}
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <ThemeEffects />
+      </body>
     </html>
   );
 }

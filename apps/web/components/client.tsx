@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from "react";
 
 import { authClient } from "@/lib/auth-client";
 import { hue, initials } from "@/lib/format";
+import { animalFor } from "@/lib/themes";
+
+import { ThemePicker } from "./theme";
 
 import { Icon } from "./icons";
 
@@ -70,7 +73,8 @@ export function UserMenu({ login, name }: { login: string; name: string }) {
           className="avatar"
           style={{ width: 28, height: 28, fontSize: 11, ["--avatar-hue" as string]: hue(login) }}
         >
-          {initials(login)}
+          <span className="avatar-initials">{initials(login)}</span>
+          <span className="avatar-animal">{animalFor(login)}</span>
         </span>
         <Icon name="chevronDown" size={14} />
       </summary>
@@ -79,6 +83,8 @@ export function UserMenu({ login, name }: { login: string; name: string }) {
           <strong>{name}</strong>
           <span>@{login}</span>
         </div>
+        <ThemePicker />
+        <hr />
         <a className="menu-item" href="/settings/tokens" role="menuitem">
           <Icon name="key" /> Access tokens
         </a>

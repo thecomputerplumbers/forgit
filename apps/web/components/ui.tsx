@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { formatDate, hue, initials, timeAgo } from "@/lib/format";
+import { animalFor } from "@/lib/themes";
 
 import { Icon, type IconName } from "./icons";
 
@@ -16,7 +17,9 @@ export function Avatar({ name, size = 20 }: { name: string; size?: number }) {
         ["--avatar-hue" as string]: hue(name),
       }}
     >
-      {initials(name)}
+      <span className="avatar-initials">{initials(name)}</span>
+      {/* Shown instead of initials by the Field Guide theme. */}
+      <span className="avatar-animal">{animalFor(name)}</span>
     </span>
   );
 }

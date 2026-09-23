@@ -87,7 +87,7 @@ export default async function NewPullPage({
                 />
               </Field>
               <div className="form-actions">
-                <button className="btn btn-success" type="submit">
+                <button className="btn btn-success" data-confetti type="submit">
                   <Icon name="pull" /> Open pull request
                 </button>
                 <a className="btn btn-ghost" href={`/${owner}/${name}/pulls`}>

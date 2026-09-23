@@ -6,6 +6,7 @@ import { PULL_ICON } from "@/components/repo";
 import { Shell } from "@/components/shell";
 import { Avatar, Badge, EmptyState, TimeAgo } from "@/components/ui";
 import { describeActivity } from "@/lib/activity";
+import { animalFor } from "@/lib/themes";
 import { plural } from "@/lib/format";
 import { loadLogins } from "@/lib/repo-page";
 import { requireOrganization } from "@/lib/session";
@@ -142,7 +143,9 @@ export default async function HomePage() {
                       data-filter={`${repo.name} ${repo.description}`}
                       key={repo.id}
                     >
-                      <span aria-hidden="true" className="valve" />
+                      <span aria-hidden="true" className="valve">
+                        <span className="valve-animal">{animalFor(repo.name)}</span>
+                      </span>
                       <div className="fitting-main">
                         <div className="fitting-title">
                           <a href={`/${repo.owner}/${repo.name}`}>{repo.name}</a>

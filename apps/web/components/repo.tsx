@@ -2,6 +2,7 @@ import type { GitCommit, GitEntry } from "@forgit/git-client";
 import type { PullRequest, Repository } from "@forgit/domain";
 
 import { formatBytes } from "@/lib/format";
+import { animalFor } from "@/lib/themes";
 
 import { ListFilter } from "./client";
 import { Icon, type IconName } from "./icons";
@@ -41,6 +42,9 @@ export function RepoHeader({
       <div className="container">
         <div className="repo-title">
           <Icon name="book" size={18} />
+          <span aria-hidden="true" className="repo-mascot">
+            {animalFor(repo.name)}
+          </span>
           <a href="/">{owner}</a>
           <span className="repo-title-sep">/</span>
           <a className="repo-title-name" href={base}>

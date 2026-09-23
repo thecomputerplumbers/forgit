@@ -401,7 +401,12 @@ export default async function PullPage({
                       <div className="row">
                         <form action={mergeAction} className="row" style={{ flex: 1 }}>
                           {hidden}
-                          <button className="btn btn-success" disabled={!mergeReady} type="submit">
+                          <button
+                            className="btn btn-success"
+                            data-confetti
+                            disabled={!mergeReady}
+                            type="submit"
+                          >
                             <Icon name="merge" /> Squash and merge
                           </button>
                           <span className="muted" style={{ fontSize: 13 }}>

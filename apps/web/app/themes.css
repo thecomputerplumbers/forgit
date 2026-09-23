@@ -1,0 +1,1144 @@
+/*
+ * Switchable themes. Each theme sets html[data-theme] and overrides the tokens
+ * from globals.css, then adds the handful of decorations that make it itself.
+ * Classic is globals.css untouched.
+ */
+
+/* ---------- Pieces that only some themes show ---------- */
+
+.avatar-animal,
+.valve-animal,
+.repo-mascot,
+.logo-eye {
+  display: none;
+}
+
+/* ---------- Theme picker ---------- */
+
+.theme-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.theme-option {
+  align-items: center;
+  gap: 10px;
+  white-space: normal;
+}
+.theme-option-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.theme-option-text span {
+  color: var(--text-3);
+  font-size: 12px;
+}
+.theme-swatch {
+  display: inline-flex;
+  flex: none;
+  overflow: hidden;
+  width: 30px;
+  height: 18px;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+}
+.theme-swatch i {
+  flex: 1;
+}
+.theme-option[aria-pressed="true"] {
+  background: var(--accent-soft);
+}
+.theme-option[aria-pressed="true"] strong::after {
+  content: " ✓";
+  color: var(--accent-text);
+}
+.menu-panel:has(.theme-picker) {
+  min-width: 250px;
+}
+
+/* ---------- Confetti (Bubblegum) ---------- */
+
+.confetti {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow: hidden;
+  pointer-events: none;
+}
+.confetti i {
+  position: fixed;
+  width: 9px;
+  height: 14px;
+  border-radius: 3px;
+  animation: confetti-fly 1.5s cubic-bezier(0.15, 0.7, 0.35, 1) forwards;
+}
+.confetti i:nth-child(3n) {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+@keyframes confetti-fly {
+  0% {
+    transform: translate(-50%, -50%) rotate(0) scale(0.4);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) + 320px)) rotate(var(--spin))
+      scale(1);
+    opacity: 0;
+  }
+}
+
+/* =====================================================================
+   Phosphor '84: a green-screen terminal that hums
+   ===================================================================== */
+
+:root[data-theme="retro"] {
+  color-scheme: dark;
+  --bg: #030a04;
+  --surface: #051007;
+  --surface-2: #07170a;
+  --surface-3: #0b240f;
+  --border: #1a5a27;
+  --border-strong: #2e8f43;
+  --text: #4dff7c;
+  --text-2: #3bd766;
+  --text-3: #25a04b;
+  --accent: #ffb000;
+  --accent-hover: #ffc848;
+  --accent-soft: #2a1d00;
+  --accent-text: #ffb000;
+  --success: #4dff7c;
+  --success-soft: #0b2a12;
+  --danger: #ff5a4d;
+  --danger-soft: #2c0c09;
+  --warning: #ffb000;
+  --warning-soft: #2a1d00;
+  --done: #7cc8ff;
+  --done-soft: #0a1b2b;
+  --add-bg: #0a2711;
+  --add-line: #0e3818;
+  --del-bg: #2a0c0a;
+  --del-line: #3b110e;
+  --hunk-bg: #07191f;
+  --brand: #051007;
+  --brand-ink: #4dff7c;
+  --radius: 0;
+  --radius-sm: 0;
+  --shadow-sm: none;
+  --shadow-md: 0 0 0 1px var(--border-strong), 0 0 28px rgb(77 255 124 / 0.18);
+  --focus: 0 0 0 2px #ffb000;
+  --sans: "VT323", ui-monospace, monospace;
+  --mono: "VT323", ui-monospace, monospace;
+  --display: "VT323", ui-monospace, monospace;
+  --plate: #051007;
+  --plate-ink: #4dff7c;
+  --plate-rim: #4dff7c;
+  --pipe: #4dff7c;
+  --patina: #ffb000;
+  --hl-keyword: #ffb000;
+  --hl-string: #b8ffca;
+  --hl-number: #7cc8ff;
+  --hl-comment: #1f8a40;
+  --hl-title: #eaffef;
+  --hl-type: #ffd27a;
+  --hl-attr: #7cc8ff;
+  --hl-tag: #ffb000;
+  --hl-meta: #25a04b;
+  --hl-regexp: #ff8a7a;
+}
+[data-theme="retro"] body {
+  /* VT323 has a tiny x-height; this keeps it as readable as the UI font. */
+  font-size-adjust: 0.62;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  text-shadow:
+    0 0 1px currentColor,
+    0 0 6px rgb(77 255 124 / 0.45);
+  animation: crt-on 0.7s ease-out;
+}
+[data-theme="retro"] body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(to bottom, rgb(0 0 0 / 0.28) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at center, transparent 55%, rgb(0 0 0 / 0.55) 100%);
+  animation: crt-hum 7s linear infinite;
+}
+@keyframes crt-on {
+  0% {
+    transform: scale(1, 0.004);
+    filter: brightness(4);
+  }
+  45% {
+    transform: scale(1, 0.004);
+    filter: brightness(4);
+  }
+  70% {
+    transform: scale(1, 1.02);
+    filter: brightness(1.6);
+  }
+  100% {
+    transform: none;
+    filter: none;
+  }
+}
+@keyframes crt-hum {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  48% {
+    opacity: 0.92;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes cursor-blink {
+  50% {
+    opacity: 0;
+  }
+}
+[data-theme="retro"] ::selection {
+  background: #4dff7c;
+  color: #030a04;
+  text-shadow: none;
+}
+[data-theme="retro"] a:hover {
+  background: var(--accent);
+  color: #030a04;
+  text-decoration: none;
+  text-shadow: none;
+}
+[data-theme="retro"] .page-header h1::after,
+[data-theme="retro"] .pr-hero h1::after,
+[data-theme="retro"] .commit-hero h1::after,
+[data-theme="retro"] .auth-card h1::after,
+[data-theme="retro"] .plate-name::after {
+  content: "█";
+  margin-left: 0.15em;
+  animation: cursor-blink 1.05s steps(1) infinite;
+}
+[data-theme="retro"] .btn {
+  border: 1px solid currentColor;
+  background: transparent;
+  color: var(--text);
+  text-transform: uppercase;
+}
+[data-theme="retro"] .btn:not(.btn-icon)::before {
+  content: "[";
+  margin-right: 2px;
+}
+[data-theme="retro"] .btn:not(.btn-icon)::after {
+  content: "]";
+  margin-left: 2px;
+}
+[data-theme="retro"] .btn:hover,
+[data-theme="retro"] .btn-primary,
+[data-theme="retro"] .btn-success {
+  background: var(--text);
+  border-color: var(--text);
+  color: #030a04;
+  text-shadow: none;
+}
+[data-theme="retro"] .btn-primary:hover,
+[data-theme="retro"] .btn-success:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+[data-theme="retro"] .btn-danger {
+  color: var(--danger);
+}
+[data-theme="retro"] .badge,
+[data-theme="retro"] .counter,
+[data-theme="retro"] .sha-chip,
+[data-theme="retro"] .branch-chip {
+  border: 1px solid currentColor;
+  background: transparent;
+  border-radius: 0;
+}
+[data-theme="retro"] .state {
+  background: var(--text);
+  color: #030a04;
+  text-shadow: none;
+}
+[data-theme="retro"] .avatar {
+  border: 1px solid currentColor;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+}
+[data-theme="retro"] .logo-mark {
+  border: 1px solid var(--text);
+  border-radius: 0;
+}
+[data-theme="retro"] .tabs a[aria-current="page"],
+[data-theme="retro"] .pr-tabs a[aria-current="page"] {
+  border-bottom-color: var(--text);
+}
+[data-theme="retro"] .plate {
+  border: 4px double var(--text);
+  border-radius: 0;
+  box-shadow: 0 0 30px rgb(77 255 124 / 0.2) inset;
+}
+[data-theme="retro"] .rivet {
+  display: none;
+}
+[data-theme="retro"] .plate-name {
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  font-size: clamp(34px, 6vw, 64px);
+}
+[data-theme="retro"] .plate-name::before {
+  content: "C:\\>";
+  margin-right: 0.3em;
+  color: var(--text-3);
+}
+[data-theme="retro"] .plate-action {
+  color: #030a04;
+  background: var(--text);
+}
+[data-theme="retro"] .fitting::after {
+  background: repeating-linear-gradient(to bottom, var(--pipe) 0 5px, transparent 5px 9px);
+}
+[data-theme="retro"] .fitting::before {
+  background: repeating-linear-gradient(to right, var(--pipe) 0 4px, transparent 4px 7px);
+  height: 2px;
+}
+[data-theme="retro"] .valve {
+  border-radius: 0;
+}
+[data-theme="retro"] .fitting-flowing .valve {
+  box-shadow: 0 0 10px var(--patina);
+  animation: cursor-blink 1.4s steps(1) infinite;
+}
+[data-theme="retro"] .diff-add .ln,
+[data-theme="retro"] .diff-del .ln {
+  color: var(--text);
+}
+[data-theme="retro"] .auth {
+  background: var(--bg);
+}
+
+/* =====================================================================
+   Bubblegum: stickers, straws, and confetti
+   ===================================================================== */
+
+:root[data-theme="playful"] {
+  color-scheme: light;
+  --ink: #1b1b3a;
+  --bg: #fff3f9;
+  --surface: #ffffff;
+  --surface-2: #fff9e8;
+  --surface-3: #ffeaf5;
+  --border: #1b1b3a;
+  --border-strong: #1b1b3a;
+  --text: #1b1b3a;
+  --text-2: #3f3f70;
+  --text-3: #6e6e9e;
+  --accent: #8b5cf6;
+  --accent-hover: #7c3aed;
+  --accent-soft: #efe6ff;
+  --accent-text: #6d28d9;
+  --success: #0fa968;
+  --success-soft: #d6fae9;
+  --danger: #f43f6e;
+  --danger-soft: #ffe0ea;
+  --warning: #e08a00;
+  --warning-soft: #fff2cc;
+  --done: #8b5cf6;
+  --done-soft: #efe6ff;
+  --add-bg: #e0fbee;
+  --add-line: #c3f4dc;
+  --del-bg: #ffe5ee;
+  --del-line: #ffcadb;
+  --hunk-bg: #e3f6ff;
+  --brand: #ff5fa2;
+  --brand-ink: #ffffff;
+  --radius: 18px;
+  --radius-sm: 12px;
+  --shadow-sm: 3px 3px 0 var(--ink);
+  --shadow-md: 6px 6px 0 var(--ink);
+  --focus: 0 0 0 3px #ffd23f, 0 0 0 5px var(--ink);
+  --sans: "Fredoka", ui-rounded, system-ui, sans-serif;
+  --display: "Fredoka", ui-rounded, system-ui, sans-serif;
+  --plate: #ffd23f;
+  --plate-ink: #1b1b3a;
+  --plate-rim: #1b1b3a;
+  --pipe: #ff5fa2;
+  --patina: #0fa968;
+  --hl-keyword: #e0197d;
+  --hl-string: #0f8a5f;
+  --hl-number: #7c3aed;
+  --hl-comment: #9a93b8;
+  --hl-title: #1d7fd6;
+  --hl-type: #d35400;
+  --hl-attr: #7c3aed;
+  --hl-tag: #0f8a5f;
+  --hl-meta: #9a93b8;
+  --hl-regexp: #e0197d;
+}
+[data-theme="playful"] body {
+  font-size: 15px;
+  background:
+    radial-gradient(circle, #ffc6e0 2.2px, transparent 2.8px) 0 0 / 26px 26px,
+    radial-gradient(circle, #cdeeff 2.2px, transparent 2.8px) 13px 13px / 26px 26px,
+    var(--bg);
+}
+[data-theme="playful"] h1,
+[data-theme="playful"] h2,
+[data-theme="playful"] .fitting-title a,
+[data-theme="playful"] strong {
+  font-weight: 600;
+}
+[data-theme="playful"] .topbar {
+  background: #fff;
+  border-bottom: 2px solid var(--ink);
+}
+[data-theme="playful"] .repo-header {
+  border-bottom: 2px solid var(--ink);
+}
+[data-theme="playful"] .box,
+[data-theme="playful"] .fitting,
+[data-theme="playful"] .timeline-card,
+[data-theme="playful"] .diff-file,
+[data-theme="playful"] .diff-index,
+[data-theme="playful"] .merge-box,
+[data-theme="playful"] .menu-panel,
+[data-theme="playful"] .auth-card,
+[data-theme="playful"] .thread {
+  border: 2px solid var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+[data-theme="playful"] .code-block,
+[data-theme="playful"] .copy-field,
+[data-theme="playful"] input,
+[data-theme="playful"] select,
+[data-theme="playful"] textarea {
+  border: 2px solid var(--ink);
+}
+[data-theme="playful"] .copy-field input {
+  border: 0;
+}
+[data-theme="playful"] .btn {
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 3px 3px 0 var(--ink);
+  font-weight: 600;
+  transition:
+    transform 0.12s cubic-bezier(0.3, 1.8, 0.6, 1),
+    box-shadow 0.12s;
+}
+[data-theme="playful"] .btn:hover:not(:disabled) {
+  transform: translate(-2px, -2px) rotate(-1deg);
+  box-shadow: 5px 5px 0 var(--ink);
+}
+[data-theme="playful"] .btn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+[data-theme="playful"] .btn-ghost,
+[data-theme="playful"] .btn-icon {
+  border-color: transparent;
+  box-shadow: none;
+}
+[data-theme="playful"] .btn-success {
+  background: #5ce1a6;
+  color: var(--ink);
+}
+[data-theme="playful"] .badge,
+[data-theme="playful"] .counter {
+  border: 2px solid var(--ink);
+  color: var(--ink);
+}
+[data-theme="playful"] .badge-success {
+  background: #5ce1a6;
+}
+[data-theme="playful"] .badge-danger {
+  background: #ff9ab8;
+}
+[data-theme="playful"] .badge-warning {
+  background: #ffd23f;
+}
+[data-theme="playful"] .badge-accent,
+[data-theme="playful"] .badge-done {
+  background: #d7c6ff;
+}
+[data-theme="playful"] .avatar {
+  border: 2px solid var(--ink);
+  background: hsl(var(--avatar-hue, 330) 95% 84%);
+  color: var(--ink);
+}
+[data-theme="playful"] .tabs a[aria-current="page"],
+[data-theme="playful"] .pr-tabs a[aria-current="page"] {
+  border-bottom: 4px solid #ff5fa2;
+}
+[data-theme="playful"] .logo-mark {
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+[data-theme="playful"] .plate {
+  border: 3px solid var(--ink);
+  border-radius: 26px;
+  background:
+    repeating-linear-gradient(-45deg, rgb(255 255 255 / 0.28) 0 14px, transparent 14px 28px),
+    var(--plate);
+  box-shadow: 7px 7px 0 var(--ink);
+  transform: rotate(-1.2deg);
+  outline: 2px dashed rgb(27 27 58 / 0.45);
+  outline-offset: -14px;
+}
+[data-theme="playful"] .plate + .home-summary {
+  margin-top: 26px;
+}
+[data-theme="playful"] .plate::after {
+  /* The sticker's peeling corner. */
+  content: "";
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 54px;
+  height: 54px;
+  border-radius: 0 0 26px 0;
+  background: linear-gradient(135deg, #fffdf0 0 48%, #e8c237 50%, var(--bg) 52%);
+  box-shadow: -3px -3px 6px rgb(0 0 0 / 0.12);
+  clip-path: polygon(100% 0, 0 100%, 100% 100%);
+}
+[data-theme="playful"] .rivet {
+  width: auto;
+  height: auto;
+  background: none;
+  box-shadow: none;
+  color: #ff5fa2;
+  font-size: 16px;
+  line-height: 1;
+}
+[data-theme="playful"] .rivet::before {
+  content: "✦";
+}
+[data-theme="playful"] .rivet-tr::before,
+[data-theme="playful"] .rivet-bl::before {
+  content: "✿";
+  color: #8b5cf6;
+}
+[data-theme="playful"] .plate-name {
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  text-shadow:
+    3px 3px 0 #ff5fa2,
+    6px 6px 0 var(--ink);
+  font-size: clamp(30px, 5vw, 54px);
+}
+[data-theme="playful"] .plate-host {
+  color: var(--ink);
+}
+[data-theme="playful"] .plate-action {
+  background: #fff;
+  border: 2px solid var(--ink);
+  color: var(--ink);
+}
+[data-theme="playful"] .fitting::after {
+  /* A bendy straw. */
+  left: -25px;
+  width: 8px;
+  border-left: 2px solid var(--ink);
+  border-right: 2px solid var(--ink);
+  background: repeating-linear-gradient(180deg, #ff5fa2 0 10px, #fff 10px 20px);
+}
+[data-theme="playful"] .fitting::before {
+  height: 6px;
+  top: 23px;
+  border-top: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+  background: repeating-linear-gradient(90deg, #ff5fa2 0 8px, #fff 8px 16px);
+}
+[data-theme="playful"] .valve {
+  top: 17px;
+  left: -32px;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--ink);
+  background: radial-gradient(circle at 35% 30%, #fff 0 18%, #3ec5ff 22%);
+}
+[data-theme="playful"] .fitting:nth-child(3n + 2) .valve {
+  background: radial-gradient(circle at 35% 30%, #fff 0 18%, #ffd23f 22%);
+}
+[data-theme="playful"] .fitting:nth-child(3n) .valve {
+  background: radial-gradient(circle at 35% 30%, #fff 0 18%, #8b5cf6 22%);
+}
+[data-theme="playful"] .fitting-flowing .valve {
+  background: radial-gradient(circle at 35% 30%, #fff 0 18%, #5ce1a6 22%);
+  animation: gumball-bounce 1.6s ease-in-out infinite;
+}
+@keyframes gumball-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+[data-theme="playful"] .fitting-pulls {
+  border: 2px solid var(--ink);
+  background: #5ce1a6;
+  color: var(--ink);
+}
+[data-theme="playful"] .empty-icon {
+  border: 2px solid var(--ink);
+  background: #ffd23f;
+  color: var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  transform: rotate(-6deg);
+}
+
+/* =====================================================================
+   Field Guide: every repository has a critter
+   ===================================================================== */
+
+:root[data-theme="animals"] {
+  color-scheme: light;
+  --bg: #f1ead7;
+  --surface: #fffcf2;
+  --surface-2: #f7f0dc;
+  --surface-3: #ece2c6;
+  --border: #d9cba8;
+  --border-strong: #bca985;
+  --text: #2a291d;
+  --text-2: #4f4d3b;
+  --text-3: #7a765c;
+  --accent: #2f5d3a;
+  --accent-hover: #23482c;
+  --accent-soft: #e0ead3;
+  --accent-text: #2c5a37;
+  --success: #4c7a29;
+  --success-soft: #e2edd2;
+  --danger: #b0432a;
+  --danger-soft: #f5dfd3;
+  --warning: #9d6b12;
+  --warning-soft: #f5e8c9;
+  --done: #74558f;
+  --done-soft: #ebe2f1;
+  --add-bg: #e6eed3;
+  --add-line: #d5e3b8;
+  --del-bg: #f5e2d6;
+  --del-line: #edcdbb;
+  --hunk-bg: #e5ecdf;
+  --brand: #2f5d3a;
+  --brand-ink: #e9b949;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow-sm: 0 1px 0 rgb(90 70 30 / 0.12);
+  --shadow-md: 0 10px 24px -8px rgb(70 50 20 / 0.3);
+  --sans: "Nunito", ui-rounded, system-ui, sans-serif;
+  --display: "Fraunces", Georgia, serif;
+  --plate: #7b4f2c;
+  --plate-ink: #fbecc5;
+  --plate-rim: #4a2f1b;
+  --pipe: #8b6b4a;
+  --patina: #4c7a29;
+  --hl-keyword: #8e3b1f;
+  --hl-string: #4c7a29;
+  --hl-number: #2c6a82;
+  --hl-comment: #9a916f;
+  --hl-title: #74558f;
+  --hl-type: #9d6b12;
+  --hl-attr: #2c6a82;
+  --hl-tag: #2f5d3a;
+  --hl-meta: #9a916f;
+  --hl-regexp: #8e3b1f;
+}
+[data-theme="animals"] body {
+  font-size: 14.5px;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .28 0 0 0 0 .15 0 0 0 .08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    var(--bg);
+}
+[data-theme="animals"] .page-header h1,
+[data-theme="animals"] .pr-hero h1,
+[data-theme="animals"] .commit-hero h1,
+[data-theme="animals"] .auth-card h1,
+[data-theme="animals"] .repo-title-name,
+[data-theme="animals"] .home-section-head h2,
+[data-theme="animals"] .panel h2,
+[data-theme="animals"] .markdown h1,
+[data-theme="animals"] .markdown h2 {
+  font-family: var(--display);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+[data-theme="animals"] .avatar {
+  background: hsl(var(--avatar-hue, 90) 40% 88%);
+  box-shadow: inset 0 0 0 1px rgb(80 60 20 / 0.2);
+}
+[data-theme="animals"] .avatar-initials,
+[data-theme="animals"] .repo-title > .icon {
+  display: none;
+}
+[data-theme="animals"] .avatar-animal {
+  display: block;
+  font-size: 1.45em;
+  line-height: 1;
+}
+[data-theme="animals"] .repo-mascot {
+  display: inline-block;
+  margin-right: 2px;
+  font-size: 22px;
+  line-height: 1;
+}
+[data-theme="animals"] .logo-branch {
+  display: none;
+}
+[data-theme="animals"] .logo-mark::after {
+  /* Beavers: nature's plumbers. */
+  content: "🦫";
+  font-size: 18px;
+  line-height: 1;
+}
+[data-theme="animals"] .tabs a[aria-current="page"],
+[data-theme="animals"] .pr-tabs a[aria-current="page"] {
+  border-bottom-color: #e9b949;
+}
+[data-theme="animals"] .plate {
+  border-radius: 10px;
+  transform: rotate(-0.6deg);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.1), transparent 30%, rgb(0 0 0 / 0.15)),
+    repeating-linear-gradient(
+      3deg,
+      #7b4f2c 0 4px,
+      #86582f 4px 9px,
+      #71462a 9px 11px,
+      #8d5f35 11px 18px
+    );
+  box-shadow:
+    inset 0 0 0 5px #6a4225,
+    inset 0 0 0 7px rgb(0 0 0 / 0.2),
+    0 14px 26px -12px rgb(60 35 10 / 0.6);
+}
+[data-theme="animals"] .rivet {
+  width: 10px;
+  height: 10px;
+  background: radial-gradient(circle at 40% 35%, #cfcfcf, #6c6c6c 55%, #333);
+}
+[data-theme="animals"] .plate-name {
+  font-family: var(--display);
+  font-weight: 800;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: clamp(30px, 5vw, 52px);
+  /* Carved into the wood. */
+  color: #f8e6bb;
+  text-shadow:
+    0 -1px 0 rgb(0 0 0 / 0.55),
+    0 1px 0 rgb(255 255 255 / 0.18);
+}
+[data-theme="animals"] .plate-name::after {
+  content: " 🌲";
+  font-size: 0.6em;
+}
+[data-theme="animals"] .plate-host {
+  color: #e8d3a3;
+}
+[data-theme="animals"] .plate-action {
+  background: #e9b949;
+  border-color: #6a4225;
+  color: #2a1a0c;
+}
+[data-theme="animals"] .fitting::after {
+  /* A trail of paw prints instead of a pipe. */
+  left: -30px;
+  width: 18px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='34' viewBox='0 0 18 34'%3E%3Cg fill='%23a58a64'%3E%3Cellipse cx='6' cy='9' rx='3.2' ry='2.8'/%3E%3Ccircle cx='2.6' cy='4.6' r='1.3'/%3E%3Ccircle cx='5' cy='2.4' r='1.3'/%3E%3Ccircle cx='8' cy='2.6' r='1.3'/%3E%3Ccircle cx='10' cy='5' r='1.3'/%3E%3Cellipse cx='12' cy='26' rx='3.2' ry='2.8'/%3E%3Ccircle cx='8.6' cy='21.6' r='1.3'/%3E%3Ccircle cx='11' cy='19.4' r='1.3'/%3E%3Ccircle cx='14' cy='19.6' r='1.3'/%3E%3Ccircle cx='16' cy='22' r='1.3'/%3E%3C/g%3E%3C/svg%3E")
+    repeat-y center top / 18px 34px;
+}
+[data-theme="animals"] .fitting::before {
+  display: none;
+}
+[data-theme="animals"] .valve {
+  top: 10px;
+  left: -40px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  background: var(--surface);
+  box-shadow: 0 0 0 2px var(--border-strong);
+}
+[data-theme="animals"] .valve-animal {
+  display: block;
+  font-size: 18px;
+  line-height: 1;
+}
+[data-theme="animals"] .fitting-flowing .valve {
+  background: var(--success-soft);
+  box-shadow: 0 0 0 2px var(--patina);
+}
+[data-theme="animals"] .fitting-shut .valve {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+[data-theme="animals"] .manifold {
+  padding-left: 46px;
+}
+[data-theme="animals"] .empty-icon {
+  background: var(--accent-soft);
+}
+[data-theme="animals"] .empty-icon svg {
+  display: none;
+}
+[data-theme="animals"] .empty-icon::after {
+  content: "🦉";
+  font-size: 24px;
+}
+
+/* =====================================================================
+   The Melt: it is looking at you
+   ===================================================================== */
+
+:root[data-theme="weird"] {
+  color-scheme: dark;
+  --bg: #120822;
+  --surface: rgb(33 18 58 / 0.86);
+  --surface-2: rgb(42 23 72 / 0.9);
+  --surface-3: #33205a;
+  --border: #4d2f82;
+  --border-strong: #7048b8;
+  --text: #f4ebff;
+  --text-2: #d0bcf3;
+  --text-3: #a18acd;
+  --accent: #c6ff3d;
+  --accent-hover: #dbff7d;
+  --accent-soft: #2a380c;
+  --accent-text: #c6ff3d;
+  --success: #5dfdcb;
+  --success-soft: #0e3a33;
+  --danger: #ff5c8a;
+  --danger-soft: #3f1027;
+  --warning: #ffd166;
+  --warning-soft: #3a2d10;
+  --done: #ff7ac6;
+  --done-soft: #3f1235;
+  --add-bg: #0f3021;
+  --add-line: #14402c;
+  --del-bg: #3a1026;
+  --del-line: #4d1532;
+  --hunk-bg: #231a48;
+  --brand: #c6ff3d;
+  --brand-ink: #120822;
+  --radius: 22px 7px 26px 11px;
+  --radius-sm: 12px 4px 14px 6px;
+  --shadow-sm: 0 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 18px 40px -12px rgb(198 255 61 / 0.25);
+  --focus: 0 0 0 3px #ff7ac6;
+  --sans: "Syne", ui-sans-serif, system-ui, sans-serif;
+  --display: "Rubik Wet Paint", "Syne", system-ui, sans-serif;
+  --plate: #c6ff3d;
+  --plate-ink: #120822;
+  --plate-rim: #ff7ac6;
+  --pipe: #ff7ac6;
+  --patina: #5dfdcb;
+  --hl-keyword: #ff7ac6;
+  --hl-string: #c6ff3d;
+  --hl-number: #5dfdcb;
+  --hl-comment: #7d68a8;
+  --hl-title: #ffd166;
+  --hl-type: #8ab4ff;
+  --hl-attr: #5dfdcb;
+  --hl-tag: #ff7ac6;
+  --hl-meta: #7d68a8;
+  --hl-regexp: #ffd166;
+}
+[data-theme="weird"] body {
+  position: relative;
+  isolation: isolate;
+}
+[data-theme="weird"] body::before {
+  /* Lava-lamp goo drifting behind everything. */
+  content: "";
+  position: fixed;
+  inset: -20%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(28% 32% at 20% 25%, rgb(198 255 61 / 0.35), transparent 70%),
+    radial-gradient(30% 26% at 80% 20%, rgb(255 122 198 / 0.4), transparent 70%),
+    radial-gradient(34% 30% at 65% 80%, rgb(93 253 203 / 0.28), transparent 70%),
+    radial-gradient(26% 30% at 15% 85%, rgb(138 180 255 / 0.3), transparent 70%);
+  filter: blur(40px);
+  animation: goo-drift 38s ease-in-out infinite alternate;
+}
+@keyframes goo-drift {
+  0% {
+    transform: translate(0, 0) rotate(0) scale(1);
+  }
+  33% {
+    transform: translate(4%, -3%) rotate(20deg) scale(1.1);
+  }
+  66% {
+    transform: translate(-5%, 4%) rotate(-15deg) scale(0.95);
+  }
+  100% {
+    transform: translate(3%, 5%) rotate(35deg) scale(1.08);
+  }
+}
+[data-theme="weird"] ::selection {
+  background: #ff7ac6;
+  color: #120822;
+}
+[data-theme="weird"] .topbar {
+  background: rgb(18 8 34 / 0.6);
+}
+[data-theme="weird"] .repo-header {
+  background: rgb(18 8 34 / 0.55);
+  backdrop-filter: blur(12px);
+}
+[data-theme="weird"] .page-header h1,
+[data-theme="weird"] .pr-hero h1,
+[data-theme="weird"] .commit-hero h1,
+[data-theme="weird"] .auth-card h1,
+[data-theme="weird"] .repo-title-name,
+[data-theme="weird"] .fitting-title a,
+[data-theme="weird"] .home-section-head h2,
+[data-theme="weird"] .panel h2 {
+  /* Chromatic fringe, as if seen through a cheap lens. */
+  text-shadow:
+    1.5px 0 rgb(255 43 214 / 0.75),
+    -1.5px 0 rgb(43 246 255 / 0.75);
+}
+[data-theme="weird"] h1,
+[data-theme="weird"] h2 {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+[data-theme="weird"] .menu-panel {
+  /* Menus sit over content, so they cannot be see-through goo. */
+  background: #1e1233;
+}
+[data-theme="weird"] .box,
+[data-theme="weird"] .fitting,
+[data-theme="weird"] .timeline-card,
+[data-theme="weird"] .diff-file,
+[data-theme="weird"] .merge-box,
+[data-theme="weird"] .menu-panel {
+  backdrop-filter: blur(10px);
+}
+[data-theme="weird"] .fitting:nth-child(odd) {
+  transform: rotate(-0.7deg);
+}
+[data-theme="weird"] .fitting:nth-child(even) {
+  transform: rotate(0.6deg) translateX(6px);
+}
+[data-theme="weird"] .btn {
+  transition:
+    border-radius 0.5s cubic-bezier(0.3, 1.6, 0.5, 1),
+    background 0.2s,
+    transform 0.4s;
+}
+[data-theme="weird"] .btn:hover:not(:disabled) {
+  border-radius: 42% 58% 60% 40% / 55% 45% 62% 38%;
+  transform: scale(1.04) skewX(-4deg);
+}
+[data-theme="weird"] .btn-primary,
+[data-theme="weird"] .btn-success {
+  background: #c6ff3d;
+  border-color: #c6ff3d;
+  color: #120822;
+}
+[data-theme="weird"] .state {
+  color: #120822;
+}
+[data-theme="weird"] .tabs a[aria-current="page"],
+[data-theme="weird"] .pr-tabs a[aria-current="page"] {
+  border-bottom-color: transparent;
+  text-decoration: underline wavy #c6ff3d 2px;
+  text-underline-offset: 8px;
+}
+[data-theme="weird"] a:hover {
+  text-decoration-style: wavy;
+}
+[data-theme="weird"] .avatar {
+  background: conic-gradient(
+    from calc(var(--avatar-hue, 0) * 1deg),
+    #ff7ac6,
+    #c6ff3d,
+    #5dfdcb,
+    #ff7ac6
+  );
+  color: #120822;
+  border-radius: 46% 54% 40% 60% / 60% 40% 58% 42%;
+}
+[data-theme="weird"] .logo-mark {
+  background: #f4ebff;
+  border-radius: 50%;
+  animation: eye-blink 6s infinite;
+}
+[data-theme="weird"] .logo-branch {
+  display: none;
+}
+[data-theme="weird"] .logo-eye {
+  display: block;
+}
+.logo-eye-white {
+  fill: #fff;
+}
+.logo-eye-pupil {
+  transform: translate(calc(var(--look-x, 0) * 4.5px), calc(var(--look-y, 0) * 2.6px));
+  transition: transform 0.09s linear;
+}
+@keyframes eye-blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.08);
+  }
+}
+[data-theme="weird"] .plate {
+  border-radius: 34px 12px 40px 16px;
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgb(255 255 255 / 0.35), transparent 50%), var(--plate);
+  box-shadow:
+    0 0 0 3px #ff7ac6,
+    0 26px 60px -20px rgb(198 255 61 / 0.55);
+  margin-bottom: 40px;
+}
+[data-theme="weird"] .plate::after {
+  /* Drips. The sign is melting. */
+  content: "";
+  position: absolute;
+  top: calc(100% - 2px);
+  left: 6%;
+  width: 70%;
+  height: 46px;
+  background:
+    radial-gradient(10px 26px at 8% 0, #c6ff3d 98%, transparent) no-repeat,
+    radial-gradient(7px 38px at 23% 0, #c6ff3d 98%, transparent) no-repeat,
+    radial-gradient(12px 18px at 41% 0, #c6ff3d 98%, transparent) no-repeat,
+    radial-gradient(6px 44px at 62% 0, #c6ff3d 98%, transparent) no-repeat,
+    radial-gradient(9px 22px at 88% 0, #c6ff3d 98%, transparent) no-repeat;
+  transform-origin: top;
+  animation: drip 5s ease-in-out infinite alternate;
+}
+@keyframes drip {
+  from {
+    transform: scaleY(0.75);
+  }
+  to {
+    transform: scaleY(1.15);
+  }
+}
+[data-theme="weird"] .rivet {
+  /* The rivets are eyes now. */
+  width: 15px;
+  height: 15px;
+  background: radial-gradient(circle at 50% 55%, #120822 0 30%, #fff 34%);
+  box-shadow: 0 0 0 1.5px #120822;
+  animation: eye-blink 4.3s infinite;
+}
+[data-theme="weird"] .rivet-tr {
+  animation-delay: -1.1s;
+}
+[data-theme="weird"] .rivet-bl {
+  animation-delay: -2.7s;
+}
+[data-theme="weird"] .rivet-br {
+  animation-delay: -3.4s;
+}
+[data-theme="weird"] .plate-name {
+  font-family: var(--display);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  font-size: clamp(34px, 6vw, 66px);
+  text-shadow: none;
+}
+[data-theme="weird"] .plate-host {
+  color: #3b2a1e;
+}
+[data-theme="weird"] .plate-host code {
+  color: #120822;
+}
+[data-theme="weird"] .plate-action {
+  background: #120822;
+  border-color: #120822;
+  color: #c6ff3d;
+}
+[data-theme="weird"] .home-summary {
+  margin-top: 8px;
+}
+[data-theme="weird"] .fitting::after {
+  /* A tentacle, slowly crawling. */
+  left: -26px;
+  width: 10px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='40' viewBox='0 0 10 40'%3E%3Cpath d='M5 0 C 10 10, 0 10, 5 20 S 10 30, 5 40' fill='none' stroke='%23ff7ac6' stroke-width='3.5' stroke-linecap='round'/%3E%3C/svg%3E")
+    repeat-y 0 0 / 10px 40px;
+  animation: slither 2.4s linear infinite;
+}
+@keyframes slither {
+  to {
+    background-position: 0 40px;
+  }
+}
+[data-theme="weird"] .fitting::before {
+  border-radius: 99px;
+}
+[data-theme="weird"] .valve {
+  top: 17px;
+  left: -33px;
+  width: 19px;
+  height: 19px;
+  border: 0;
+  background: radial-gradient(circle at 58% 55%, #120822 0 28%, #fff 32%);
+  box-shadow: 0 0 0 2px #ff7ac6;
+  animation: eye-blink 5.2s infinite;
+}
+[data-theme="weird"] .fitting:nth-child(2n) .valve {
+  background: radial-gradient(circle at 40% 45%, #120822 0 28%, #fff 32%);
+  animation-delay: -2s;
+}
+[data-theme="weird"] .fitting-flowing .valve {
+  box-shadow:
+    0 0 0 2px #c6ff3d,
+    0 0 16px #c6ff3d;
+}
+[data-theme="weird"] .fitting-shut .valve {
+  background: #33205a;
+  box-shadow: 0 0 0 2px var(--border-strong);
+  animation: none;
+}
+[data-theme="weird"] .empty-icon svg {
+  display: none;
+}
+[data-theme="weird"] .empty-icon::after {
+  content: "👁️";
+  font-size: 22px;
+}
+[data-theme="weird"] .auth {
+  background: transparent;
+}
+
+/* ---------- Motion off means off, in every theme ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+  }
+  .confetti {
+    display: none;
+  }
+}
