@@ -133,3 +133,23 @@ export const invitation = sqliteTable(
     index("invitation_email_idx").on(table.email),
   ],
 );
+
+export const ssoProvider = sqliteTable(
+  "sso_provider",
+  {
+    id: text("id").primaryKey(),
+    issuer: text("issuer").notNull(),
+    domain: text("domain").notNull(),
+    domainVerified: integer("domain_verified", { mode: "boolean" }),
+    oidcConfig: text("oidc_config"),
+    samlConfig: text("saml_config"),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    providerId: text("provider_id").notNull().unique(),
+    organizationId: text("organization_id").references(() => organization.id, {
+      onDelete: "cascade",
+    }),
+  },
+  (table) => [index("sso_provider_organization_idx").on(table.organizationId)],
+);

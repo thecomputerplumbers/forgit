@@ -11,7 +11,7 @@ export const auth = lazyAuth(() => {
     db: createAuthDb(env.DB),
     secret: resolveSecret(env.BETTER_AUTH_SECRET, origin),
     baseURL: origin,
-    trustedOrigins: [origin],
+    trustedOrigins: [origin, "https://auth.thecomputerplumbers.com"],
     onAuthEvent: async (event) => {
       await recordAuthEvent(getServices("auth").store, event);
     },

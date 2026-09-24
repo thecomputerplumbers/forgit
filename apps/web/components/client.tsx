@@ -91,6 +91,9 @@ export function UserMenu({ login, name }: { login: string; name: string }) {
         <a className="menu-item" href="/settings/members" role="menuitem">
           <Icon name="users" /> Members
         </a>
+        <a className="menu-item" href="/settings/sso" role="menuitem">
+          <Icon name="key" /> Organization SSO
+        </a>
         <hr />
         <button
           className="menu-item"

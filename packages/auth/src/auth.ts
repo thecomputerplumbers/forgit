@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { sso } from "@better-auth/sso";
 import { organization } from "better-auth/plugins";
 import { drizzle, type AnyD1Database } from "drizzle-orm/d1";
 
@@ -84,6 +85,10 @@ export function createAuth(options: CreateAuthOptions) {
         allowUserToCreateOrganization: true,
         cancelPendingInvitationsOnReInvite: true,
         sendInvitationEmail: options.sendInvitationEmail,
+      }),
+      sso({
+        organizationProvisioning: { disabled: false, defaultRole: "member" },
+        domainVerification: { enabled: true },
       }),
     ],
   });

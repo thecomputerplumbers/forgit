@@ -20,6 +20,9 @@ export default async function SignInPage({
       <p className="auth-switch">
         New here? <a href={`/sign-up${query}`}>Create an account</a>
       </p>
+      <p className="auth-switch">
+        <a href={`/sign-in/sso${query}`}>Sign in with organization SSO</a>
+      </p>
     </AuthShell>
   );
 }
