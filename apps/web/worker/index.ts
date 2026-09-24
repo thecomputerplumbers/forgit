@@ -24,6 +24,7 @@ export class GitContainer extends Container<Cloudflare.Env> {
     if (env.WALGIT_TOKEN_FORGIT) vars.WALGIT_TOKEN_FORGIT = env.WALGIT_TOKEN_FORGIT;
     if (env.MERGE_INTERNAL_TOKEN) vars.MERGE_INTERNAL_TOKEN = env.MERGE_INTERNAL_TOKEN;
     if (env.R2_ENDPOINT) vars.WALGIT__STORE__S3__ENDPOINT = env.R2_ENDPOINT;
+    if (env.GIT_BUCKET) vars.WALGIT__STORE__BUCKET = env.GIT_BUCKET;
     if (env.R2_ACCESS_KEY_ID) vars.AWS_ACCESS_KEY_ID = env.R2_ACCESS_KEY_ID;
     if (env.R2_SECRET_ACCESS_KEY) vars.AWS_SECRET_ACCESS_KEY = env.R2_SECRET_ACCESS_KEY;
     if (env.ACTIONS_EVENT_SECRET) {

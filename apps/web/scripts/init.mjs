@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { hashPassword } from "better-auth/crypto";
 
-const usage = `Usage: pnpm --filter web run init --remote --email owner@example.com --name "Owner Name" --organization "Company Name" --slug company
+const usage = `Usage: pnpm --filter web run init --remote [--env cloud] --email owner@example.com --name "Owner Name" --organization "Company Name" --slug company
 
 Use --local for a local D1 database (optionally with --persist-to DIR). The command prompts for the owner's password.
 Run once, after D1 migrations and before inviting members.`;
@@ -21,7 +21,7 @@ function optionsFromArgs(args) {
     if (key === "--remote" || key === "--local") {
       options[key.slice(2)] = true;
     } else if (
-      ["--email", "--name", "--organization", "--slug", "--persist-to"].includes(key) &&
+      ["--email", "--name", "--organization", "--slug", "--persist-to", "--env"].includes(key) &&
       args[i + 1]
     ) {
       options[key.slice(2)] = args[++i];
@@ -38,13 +38,14 @@ function optionsFromArgs(args) {
   if (options.remote && options.local) throw new Error("Choose --remote or --local");
   if (!options.remote && !options.local) throw new Error("Specify --remote or --local");
   if (options.remote && options["persist-to"]) throw new Error("--persist-to is only for --local");
+  if (options.local && options.env) throw new Error("--env is only for --remote");
   return options;
 }
 
-function wrangler(args) {
+function wrangler(args, env) {
   const result = spawnSync(
     "wrangler",
-    ["d1", "execute", "DB", "--config", "wrangler.jsonc", ...args],
+    ["d1", "execute", "DB", "--config", "wrangler.jsonc", ...(env ? ["--env", env] : []), ...args],
     {
       cwd: new URL("..", import.meta.url),
       encoding: "utf8",
@@ -103,13 +104,10 @@ async function main() {
   const options = optionsFromArgs(process.argv.slice(2));
   const target = options.remote ? "--remote" : "--local";
   const persistence = options["persist-to"] ? ["--persist-to", options["persist-to"]] : [];
-  const query = wrangler([
-    target,
-    ...persistence,
-    "--command",
-    "SELECT COUNT(*) AS count FROM organization",
-    "--json",
-  ]);
+  const query = wrangler(
+    [target, ...persistence, "--command", "SELECT COUNT(*) AS count FROM organization", "--json"],
+    options.env,
+  );
   const results = JSON.parse(query.slice(query.indexOf("[")));
   if (results[0]?.results?.[0]?.count !== 0)
     throw new Error("This instance already has an organization; init only runs once");
@@ -134,7 +132,7 @@ async function main() {
       }),
       { mode: 0o600 },
     );
-    wrangler([target, ...persistence, "--file", file, "--yes"]);
+    wrangler([target, ...persistence, "--file", file, "--yes"], options.env);
     console.log(
       `Created ${options.organization} and owner ${options.email}. Sign in at the instance URL.`,
     );

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { env } from "cloudflare:workers";
 
 import { Lockup, TAGLINE } from "./brand";
 import { UserMenu } from "./client";
@@ -75,7 +76,11 @@ export function AuthShell({ children }: { children: ReactNode }) {
           <p className="auth-tagline">{TAGLINE}</p>
         </div>
         {children}
-        <p className="auth-foot">Self-hosted Git on Cloudflare</p>
+        <p className="auth-foot">
+          {env.HOSTED_MODE === "true"
+            ? "Hosted Git on Cloudflare"
+            : "Self-hosted Git on Cloudflare"}
+        </p>
       </div>
     </div>
   );

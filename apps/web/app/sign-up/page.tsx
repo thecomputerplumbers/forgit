@@ -19,7 +19,11 @@ export default async function SignUpPage({
         {signUpDisabled(env.DISABLE_SIGN_UP) ? (
           <>
             <h1>Signups are closed</h1>
-            <p>Ask your organization owner for access to this forgit instance.</p>
+            <p>
+              {env.HOSTED_MODE === "true"
+                ? "Forgit Cloud is in private preview. Request access from the homepage."
+                : "Ask your organization owner for access to this forgit instance."}
+            </p>
           </>
         ) : (
           <>

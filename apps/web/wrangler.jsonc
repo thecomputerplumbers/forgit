@@ -46,4 +46,45 @@
   "queues": { "producers": [{ "binding": "ACTIONS_QUEUE", "queue": "forgit-actions" }] },
   "services": [{ "binding": "ACTIONS_WORKER", "service": "forgit-actions" }],
   "r2_buckets": [{ "binding": "ACTIONS_BUCKET", "bucket_name": "forgit-actions" }],
+  "env": {
+    "cloud": {
+      "routes": [{ "pattern": "forgit.cloud", "custom_domain": true }],
+      "vars": {
+        "APP_URL": "https://forgit.cloud",
+        "DISABLE_SIGN_UP": "true",
+        "HOSTED_MODE": "true",
+        "ACTIONS_ENABLED": "true",
+        "GIT_BUCKET": "forgit-cloud-git",
+        "R2_ENDPOINT": "https://865d0c927a18e87c0a0701b8d1f18ee9.r2.cloudflarestorage.com",
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "forgit-cloud",
+          "database_id": "9c8ff7a2-e75f-40c3-ab9e-a3faefc72a2a",
+          "migrations_dir": "migrations",
+        },
+      ],
+      "send_email": [
+        { "name": "EMAIL", "allowed_sender_addresses": ["seth@thecomputerplumbers.com"] },
+      ],
+      "durable_objects": {
+        "bindings": [{ "name": "GIT_CONTAINER", "class_name": "GitContainer" }],
+      },
+      "containers": [
+        {
+          "class_name": "GitContainer",
+          "image": "../../services/git/Dockerfile",
+          "image_build_context": "../../services/git",
+          "max_instances": 2,
+          "instance_type": "standard-2",
+        },
+      ],
+      "queues": {
+        "producers": [{ "binding": "ACTIONS_QUEUE", "queue": "forgit-cloud-actions" }],
+      },
+      "services": [{ "binding": "ACTIONS_WORKER", "service": "forgit-actions-cloud" }],
+      "r2_buckets": [{ "binding": "ACTIONS_BUCKET", "bucket_name": "forgit-cloud-actions" }],
+    },
+  },
 }

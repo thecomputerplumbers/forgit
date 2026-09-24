@@ -38,4 +38,44 @@
   },
   "ai": { "binding": "AI" },
   "observability": { "enabled": true },
+  "env": {
+    "cloud": {
+      "vars": {
+        "FORGIT_ORIGIN": "https://forgit.cloud",
+        "BACKUP_BUCKET_NAME": "forgit-cloud-actions",
+        "CLOUDFLARE_ACCOUNT_ID": "865d0c927a18e87c0a0701b8d1f18ee9",
+      },
+      "services": [{ "binding": "FORGIT", "service": "forgit-cloud" }],
+      "workflows": [
+        {
+          "name": "forgit-cloud-actions",
+          "binding": "CI_WORKFLOW",
+          "class_name": "ActionsWorkflow",
+        },
+      ],
+      "durable_objects": {
+        "bindings": [{ "name": "SANDBOX", "class_name": "CiSandbox" }],
+      },
+      "containers": [
+        {
+          "class_name": "CiSandbox",
+          "image": "./Dockerfile",
+          "max_instances": 4,
+          "instance_type": "standard-2",
+        },
+      ],
+      "r2_buckets": [{ "binding": "BACKUP_BUCKET", "bucket_name": "forgit-cloud-actions" }],
+      "queues": {
+        "consumers": [
+          {
+            "queue": "forgit-cloud-actions",
+            "max_batch_size": 5,
+            "max_retries": 10,
+            "dead_letter_queue": "forgit-cloud-actions-dead",
+          },
+        ],
+      },
+      "ai": { "binding": "AI" },
+    },
+  },
 }

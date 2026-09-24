@@ -8,15 +8,17 @@ import { MODE_COOKIE, MODE_SCRIPT, THEME_COOKIE, modePreference, themeById } fro
 import "./globals.css";
 import "./themes.css";
 
-const DESCRIPTION = "Self-hosted Git on Cloudflare. Commit less. Live more.";
-
 export async function generateMetadata(): Promise<Metadata> {
   const { env } = await import("cloudflare:workers");
   const base = new URL(env.APP_URL);
+  const description =
+    env.HOSTED_MODE === "true"
+      ? "Git, Actions, and verified repair proposals on Cloudflare."
+      : "Self-hosted Git on Cloudflare. Commit less. Live more.";
   return {
     metadataBase: base,
     title: { default: "forgit", template: "%s · forgit" },
-    description: DESCRIPTION,
+    description,
     applicationName: "forgit",
     icons: {
       icon: [
@@ -31,7 +33,7 @@ export async function generateMetadata(): Promise<Metadata> {
       type: "website",
       siteName: "forgit",
       title: "forgit",
-      description: DESCRIPTION,
+      description,
       url: base.origin,
       images: [
         { url: "/brand/og.png", width: 1200, height: 630, alt: "forgit: commit less, live more" },
@@ -40,7 +42,7 @@ export async function generateMetadata(): Promise<Metadata> {
     twitter: {
       card: "summary_large_image",
       title: "forgit",
-      description: DESCRIPTION,
+      description,
       images: ["/brand/og.png"],
     },
   };
