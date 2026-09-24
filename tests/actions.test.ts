@@ -20,6 +20,7 @@ import { createSqlStore, type Sql } from "@forgit/db/sql-store";
 import { createServices, evaluateMergePolicy } from "@forgit/domain";
 import { MemoryGit } from "@forgit/git-client";
 import { signBody } from "@forgit/auth/crypto";
+import { BILLING_PLANS } from "../apps/web/lib/billing-plans.ts";
 
 const YAML = `name: CI
 on: [push, pull_request, workflow_dispatch]
@@ -32,7 +33,12 @@ jobs:
 `;
 async function fixture() {
   const db = new DatabaseSync(":memory:");
-  for (const file of ["0001_init.sql", "0002_sso_provider.sql", "0004_actions.sql"])
+  for (const file of [
+    "0001_init.sql",
+    "0002_sso_provider.sql",
+    "0004_actions.sql",
+    "0005_billing.sql",
+  ])
     db.exec(readFileSync(new URL(`../apps/web/migrations/${file}`, import.meta.url), "utf8"));
   for (const id of ["alice", "bob", "cara"])
     db.prepare(
@@ -105,6 +111,62 @@ describe("Actions workflow contract", () => {
   });
 });
 describe("Actions authorization and durable state", () => {
+  it("records each completed job duration once for its owning organization", async () => {
+    const { actions, alice, db, repo } = await fixture();
+    assert.equal(BILLING_PLANS.developer.monthlyCents, 100);
+    assert.equal(BILLING_PLANS.business.monthlyCents, 5_000);
+    assert.equal(BILLING_PLANS.enterprise.monthlyCents, 100_000);
+    db.prepare(
+      "INSERT INTO billing_accounts(organization_id,plan,status,stripe_customer_id,metronome_customer_id,created_at,updated_at) VALUES('org','developer','active','cus_test','met_test',1,1)",
+    ).run();
+    const run = await actions.manual(alice, "acme", "widget", {
+      workflow: ".forgit/workflows/ci.yml",
+      ref: "main",
+    });
+    await actions.store.update(run.id, (current) => {
+      current.jobs[0]!.status = "in_progress";
+      current.jobs[0]!.startedAt = 1_000;
+    });
+    await actions.store.update(run.id, (current) => {
+      current.jobs[0]!.status = "completed";
+      current.jobs[0]!.conclusion = "failure";
+      current.jobs[0]!.completedAt = 2_500;
+    });
+    await actions.store.update(run.id, (current) => {
+      current.error = "late status update";
+    });
+    const rows = db
+      .prepare(
+        "SELECT organization_id,repository_id,action_run_id,job_id,quantity,delivered_at FROM billing_usage_events",
+      )
+      .all() as Record<string, unknown>[];
+    assert.deepEqual(
+      rows.map((row) => ({ ...row })),
+      [
+        {
+          organization_id: "org",
+          repository_id: repo.id,
+          action_run_id: run.id,
+          job_id: "test",
+          quantity: 1_500,
+          delivered_at: null,
+        },
+      ],
+    );
+  });
+  it("does not meter an organization without an active billing account", async () => {
+    const { actions, alice, db } = await fixture();
+    const run = await actions.manual(alice, "acme", "widget", {
+      workflow: ".forgit/workflows/ci.yml",
+      ref: "main",
+    });
+    await actions.store.update(run.id, (current) => {
+      current.jobs[0]!.startedAt = 1_000;
+      current.jobs[0]!.completedAt = 2_000;
+      current.jobs[0]!.status = "completed";
+    });
+    assert.equal(db.prepare("SELECT count(*) AS total FROM billing_usage_events").get()?.total, 0);
+  });
   it("authenticates raw event bodies and validates every ref", async () => {
     const event = {
       repo: "acme/widget",
