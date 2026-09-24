@@ -1,3 +1,4 @@
+import { boundedLogCommand } from "./process.ts";
 /* oxlint-disable no-control-regex -- Reject control characters at untrusted path boundaries. */
 import * as z from "zod/mini";
 import { getSandbox } from "@cloudflare/sandbox";
@@ -82,7 +83,11 @@ export async function verifyRepair(
           throw new Error("Verification directory escapes checkout");
         await sandbox.writeFile("/tmp/verify.sh", step.run);
         const result = await sandbox.exec(
-          "ulimit -f 4096; timeout 180 bash --noprofile --norc -e -o pipefail /tmp/verify.sh > /tmp/verify.log 2>&1",
+          boundedLogCommand(
+            "timeout 180 bash --noprofile --norc -e -o pipefail /tmp/verify.sh",
+            "/tmp/verify.log",
+            2 * 1024 * 1024,
+          ),
           {
             cwd,
             timeout: 190000,

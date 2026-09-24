@@ -140,4 +140,10 @@ The smoke test covers failure → verified repair PR, a successful run with logs
 
 `patches/@cloudflare__ci@0.2.0.patch` exposes the provider/runner types, removes mandatory Artifacts-specific bindings for custom providers, and adds an adapter `createRunner` hook. Forgit still extends and executes upstream `CIWorkflow` and `ci.runner`; it supplies a runner to support exact checkout, per-job credentials, ordered steps, redacted live logs, cancellation, and artifact persistence. The engine still owns durable steps, notifications, failure classification, and snapshot results. Review this small patch whenever upgrading `@cloudflare/ci`; remove it when equivalent upstream hooks are available.
 
-Production Cloudflare resource bindings, real Workers AI repair quality, live walgit event delivery, and comparative speed still require a deployed pilot. Local smoke evidence does not establish those results.
+### Production pilot (2026-09-24)
+
+Deployed to `git.thecomputerplumbers.com` and enabled for `thecomputerplumbers/howzer2`. The signed walgit push event for `1a0562a2ccf681df64356ff22dca8735f0f3d19b` created run `088e0c06-7bbd-49d0-be62-f0f3a2ff28a0`, which passed the repository's 112 tests in a real Cloudflare Sandbox. Exact checkout, locked dependency installation, persisted logs, a SHA-256-verified test artifact, snapshot creation, and a manual rerun were verified. The workflow is proposed in Howzer pull request #1. Snapshot objects under `backups/` expire after one day; incomplete snapshot uploads are aborted after one day.
+
+The pilot found and fixed a process-wide file-size limit that broke package managers. The runner and repair verifier now bound their log sinks independently of build output files. Regression coverage includes an 8 MiB build file, log overflow, and nonzero command exits.
+
+AI repair remains off for the pilot repository. Real Workers AI repair quality, deployment-environment credentials/approvals, and comparative speed still need their own live verification. The local repair smoke test uses a deterministic model stub.

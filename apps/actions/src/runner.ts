@@ -9,6 +9,8 @@ import { digest, mask, resolveEnv, shellQuote, type StepResult } from "@forgit/a
 import type { Bindings } from "./env.ts";
 import { getRun, GrantSchema, rpc, update } from "./rpc.ts";
 
+import { boundedLogCommand } from "./process.ts";
+
 const MAX_LOG_BYTES = 2 * 1024 * 1024;
 const MAX_ARTIFACT_BYTES = 32 * 1024 * 1024;
 const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -112,7 +114,13 @@ export class ForgitRunner implements Runner<DirectoryBackup> {
         if (cwdResult.exitCode !== 0 || (cwd !== "/workspace" && !cwd.startsWith("/workspace/")))
           throw new Error("Working directory escapes the checkout or does not exist");
         const process = await sandbox.startProcess(
-          `ulimit -f 4096; bash --noprofile --norc -e -o pipefail ${shellQuote(scriptPath)} > ${shellQuote(logPath)} 2>&1`,
+          boundedLogCommand(
+            `bash --noprofile --norc -e -o pipefail ${shellQuote(scriptPath)}`,
+            logPath,
+            MAX_LOG_BYTES +
+              Math.max(1, ...sensitive.map((value) => new TextEncoder().encode(value).length)) +
+              1,
+          ),
           {
             cwd,
             env: {

@@ -29,7 +29,7 @@ async function main() {
   git("config", "http.receivepack", "false");
   mkdirSync(join(repoPath, "src"));
   mkdirSync(join(repoPath, ".forgit", "workflows"), { recursive: true });
-  const yaml = `name: Smoke\non: [push, pull_request, workflow_dispatch]\njobs:\n  test:\n    runs-on: node-26\n    artifacts: [result.txt]\n    steps:\n      - run: node --input-type=module -e 'import v from "./src/value.mjs"; if(v!==2)throw new Error("expected 2"); console.log("verified");'\n      - run: printf artifact > result.txt\n`;
+  const yaml = `name: Smoke\non: [push, pull_request, workflow_dispatch]\njobs:\n  test:\n    runs-on: node-26\n    artifacts: [result.txt]\n    steps:\n      - run: node --input-type=module -e 'import v from "./src/value.mjs"; if(v!==2)throw new Error("expected 2"); console.log("verified");'\n      - run: dd if=/dev/zero of=/workspace/build-output.bin bs=1048576 count=8 && printf artifact > result.txt\n`;
   writeFileSync(join(repoPath, "src/value.mjs"), "export default 1;\n");
   writeFileSync(join(repoPath, ".forgit/workflows/ci.yml"), yaml);
   git("add", ".");
