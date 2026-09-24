@@ -32,7 +32,7 @@ jobs:
 `;
 async function fixture() {
   const db = new DatabaseSync(":memory:");
-  for (const file of ["0001_init.sql", "0002_sso_provider.sql", "0003_actions.sql"])
+  for (const file of ["0001_init.sql", "0002_sso_provider.sql", "0004_actions.sql"])
     db.exec(readFileSync(new URL(`../apps/web/migrations/${file}`, import.meta.url), "utf8"));
   for (const id of ["alice", "bob", "cara"])
     db.prepare(

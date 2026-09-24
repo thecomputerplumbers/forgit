@@ -35,7 +35,7 @@ async function main() {
   git("add", ".");
   git("commit", "-qm", "broken fixture");
   const db = new DatabaseSync(join(temp, "metadata.sqlite"));
-  for (const file of ["0001_init.sql", "0002_sso_provider.sql", "0003_actions.sql"])
+  for (const file of ["0001_init.sql", "0002_sso_provider.sql", "0004_actions.sql"])
     db.exec(readFileSync(join(root, "apps/web/migrations", file), "utf8"));
   db.exec(
     "INSERT INTO user(id,name,email,email_verified,created_at,updated_at) VALUES('alice','Alice','alice@example.test',1,1,1); INSERT INTO organization(id,name,slug,created_at) VALUES('org','Acme','acme',1); INSERT INTO member(id,organization_id,user_id,role,created_at) VALUES('m','org','alice','owner',1);",

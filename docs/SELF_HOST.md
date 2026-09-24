@@ -77,4 +77,4 @@ Or use the token as the HTTP password with username `git`.
 
 ## What this is not
 
-There is no SSH, no multi-tenant SaaS control plane, and no CI runner. Required checks can still gate merges once something with `checks:write` posts a check run for the exact head SHA.
+There is no SSH or multi-tenant SaaS control plane. For CI/CD and verified repair proposals, see [Forgit Actions](ACTIONS.md) and provision its separate Worker, Sandbox, Queue, and R2 resources. Required checks can gate merges using Actions results or external checks posted with `checks:write` for the exact head SHA.

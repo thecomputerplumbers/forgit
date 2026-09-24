@@ -102,7 +102,7 @@ Jobs have no automatic command retries. A replay after a recorded job start fail
 Actions is off unless web's `ACTIONS_ENABLED` is `"true"`, and off per repository by default. Existing forgit remains the source of accounts and metadata. No deployment or cloud provisioning is performed by adding these files.
 
 1. Create an R2 bucket `forgit-actions`, a Queue `forgit-actions`, and a dead-letter Queue `forgit-actions-dead`. The committed Wrangler configs bind them. Use separate names when self-hosting multiple installations.
-2. Apply `apps/web/migrations/0003_actions.sql` before deploying the new web Worker. Existing checks migrate as external checks.
+2. Apply `apps/web/migrations/0004_actions.sql` before deploying the new web Worker. Existing checks migrate as external checks.
 3. Set `FORGIT_ORIGIN`, `BACKUP_BUCKET_NAME`, and `CLOUDFLARE_ACCOUNT_ID` in the Actions Worker config for your installation. Set web's `APP_URL` and Git configuration consistently.
 4. Configure the following secrets without committing their values:
 
