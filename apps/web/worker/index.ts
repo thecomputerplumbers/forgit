@@ -3,12 +3,14 @@ import { classifyPath, lfsBatchWrites, type Classified } from "@forgit/git-clien
 import { handleGithubGraphql, handleGithubRest } from "@forgit/github-compat";
 import { handleMcp } from "@forgit/mcp";
 import { logEvent, requestIdFrom } from "@forgit/observability";
+import { d1Sql } from "@forgit/db/sql-store";
 import vinextWorker from "vinext/server/app-router-entry";
 
 import { actionsHttp } from "../lib/actions-http.ts";
 import { dispatchActions, getActions } from "../lib/actions.ts";
 import { getServices } from "../lib/forge.ts";
 import { GIT_CONTAINER_NAME } from "../lib/git-container.ts";
+import { deliverBillingUsage } from "../lib/billing-delivery.ts";
 
 export class GitContainer extends Container<Cloudflare.Env> {
   defaultPort = 8080;
@@ -64,8 +66,12 @@ const READ_LIMIT = { windowMs: 60_000, max: 120 };
 const WRITE_LIMIT = { windowMs: 60_000, max: 30 };
 
 export default {
-  async scheduled(_controller: ScheduledController, _env: Cloudflare.Env, ctx: ExecutionContext) {
+  async scheduled(_controller: ScheduledController, env: Cloudflare.Env, ctx: ExecutionContext) {
     ctx.waitUntil(dispatchActions());
+    if (env.HOSTED_MODE === "true" && env.BILLING_DELIVERY_ENABLED === "true") {
+      if (!env.METRONOME_API_KEY) throw new Error("Billing delivery enabled without Metronome key");
+      ctx.waitUntil(deliverBillingUsage(d1Sql(env.DB), env.METRONOME_API_KEY));
+    }
   },
   async fetch(request: Request, env: Cloudflare.Env, ctx: ExecutionContext) {
     const requestId = requestIdFrom(request.headers);

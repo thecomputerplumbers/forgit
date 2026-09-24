@@ -38,6 +38,7 @@ async function fixture() {
     "0002_sso_provider.sql",
     "0004_actions.sql",
     "0005_billing.sql",
+    "0006_billing_delivery.sql",
   ])
     db.exec(readFileSync(new URL(`../apps/web/migrations/${file}`, import.meta.url), "utf8"));
   for (const id of ["alice", "bob", "cara"])
