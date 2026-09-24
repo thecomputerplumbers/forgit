@@ -53,6 +53,7 @@
         "APP_URL": "https://forgit.cloud",
         "DISABLE_SIGN_UP": "true",
         "HOSTED_MODE": "true",
+        "BILLING_DELIVERY_ENABLED": "false",
         "ACTIONS_ENABLED": "true",
         "GIT_BUCKET": "forgit-cloud-git",
         "R2_ENDPOINT": "https://865d0c927a18e87c0a0701b8d1f18ee9.r2.cloudflarestorage.com",

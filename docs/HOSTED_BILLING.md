@@ -21,10 +21,20 @@ charge or invoice. The same run can include other billable resources later, such
 as artifact storage or agent repair. A cancelled job with a start time uses the
 run completion time when the job has no completion time.
 
+`0006_billing_delivery.sql` adds retry and quarantine state for the usage
+outbox. The hosted cron can deliver up to 25 pending facts per minute to
+Metronome `/v1/ingest`, retaining each fact's transaction ID across retries.
+Metronome receives `actions_job_duration_ms` events with a string
+`duration_ms` property. Transient failures back off; other 4xx responses are
+quarantined for review. Delivery is off until `BILLING_DELIVERY_ENABLED=true`
+and `METRONOME_API_KEY` is configured on the hosted web Worker. Do not enable
+it before the Metronome customer mapping and billable metric are verified.
+
 ## Before public signup
 
-1. Choose the Stripe account and create a Metronome account. Confirm the
-   Metronome Startup contract has no annual minimum or other fixed fee.
+1. Use The Computer Plumbers Stripe account as the seller account and create a
+   Metronome account. Confirm the Metronome Startup contract has no annual
+   minimum or other fixed fee.
 2. Create provider products, prices, and billable metrics. Decide the Actions
    unit price from measured Sandbox costs. Set per-organization spend limits and
    define what happens when a payment fails or a limit is reached.

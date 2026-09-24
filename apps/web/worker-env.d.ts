@@ -21,6 +21,8 @@ declare namespace Cloudflare {
     R2_ENDPOINT: string;
     GIT_BUCKET?: string;
     HOSTED_MODE?: string;
+    BILLING_DELIVERY_ENABLED?: string;
+    METRONOME_API_KEY?: string;
     R2_ACCESS_KEY_ID?: string;
     R2_SECRET_ACCESS_KEY?: string;
     WALGIT_URL?: string;
