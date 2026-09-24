@@ -39,6 +39,12 @@ printf '%s' "$R2_SECRET_ACCESS_KEY" | wrangler secret put R2_SECRET_ACCESS_KEY
 
 `GitContainer` copies those secrets into the container when it starts: `WALGIT_TOKEN_FORGIT`, `MERGE_INTERNAL_TOKEN`, and the R2 pair as `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`. The worker never talks to R2. Changing a secret requires a new container start before walgit sees it.
 
+### Google sign-in
+
+Create a Google Cloud Web OAuth client with `https://git.thecomputerplumbers.com/api/auth/callback/google` as an authorized redirect URI. A separate client in the same Google Cloud project keeps the Forgit secret independent from the one used by `auth.thecomputerplumbers.com`. The existing client can also work if that redirect URI is added to it, but Forgit must receive its client ID and secret either way.
+
+Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` as Worker secrets using `wrangler secret put` from `apps/web`. The branded button appears on `/sign-in` when both are configured. Google sign-in creates a Forgit account for a new email or links to an existing Forgit account when Google verifies the same email. It does not create or sign in to an account on `auth.thecomputerplumbers.com`.
+
 Attach the hostname `git.thecomputerplumbers.com` to this worker (the wrangler route is already a custom domain).
 
 ## Migrate and deploy

@@ -17,11 +17,18 @@ export type CreateAuthOptions = {
   secret: string;
   baseURL: string;
   trustedOrigins?: string[];
+  google?: { clientId: string; clientSecret: string };
   sendInvitationEmail?: (input: {
     id: string;
     email: string;
     role: string;
     organization: { name: string };
+  }) => Promise<void>;
+  onInvitationAccepted?: (input: {
+    invitationId: string;
+    organizationId: string;
+    userId: string;
+    email: string;
   }) => Promise<void>;
   onAuthEvent?: (event: {
     action: "auth.sign_up" | "auth.sign_in";
@@ -42,6 +49,15 @@ export function createAuth(options: CreateAuthOptions) {
     secret: options.secret,
     baseURL: options.baseURL,
     trustedOrigins: options.trustedOrigins ?? [options.baseURL],
+    socialProviders: options.google
+      ? {
+          google: {
+            clientId: options.google.clientId,
+            clientSecret: options.google.clientSecret,
+            prompt: "select_account",
+          },
+        }
+      : undefined,
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false,
@@ -85,6 +101,16 @@ export function createAuth(options: CreateAuthOptions) {
         allowUserToCreateOrganization: true,
         cancelPendingInvitationsOnReInvite: true,
         sendInvitationEmail: options.sendInvitationEmail,
+        organizationHooks: {
+          afterAcceptInvitation: async ({ invitation, organization, user }) => {
+            await options.onInvitationAccepted?.({
+              invitationId: invitation.id,
+              organizationId: organization.id,
+              userId: user.id,
+              email: user.email,
+            });
+          },
+        },
       }),
       sso({
         organizationProvisioning: { disabled: false, defaultRole: "member" },
