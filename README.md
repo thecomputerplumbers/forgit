@@ -8,6 +8,8 @@ Self-hostable Git for a small team, on Cloudflare. Commit less. Live more.
 
 forgit is the part of a forge people actually use: repositories, HTTPS clone and push, pull requests, a small browser, a `gh`-shaped API, and a GitHub-shaped MCP endpoint. It is not a GitHub clone. Git objects live in [walgit](https://github.com/tobi/walgit) on R2. Users, permissions, pull requests, reviews, checks, and tokens live in D1.
 
+**[Forgit Actions](docs/ACTIONS.md)** adds repository CI/CD, run history and logs, environment approvals, and optional verified repair PRs, powered by Cloudflare CI. It is disabled until configured.
+
 The reference hostname is `git.thecomputerplumbers.com`.
 
 ```text

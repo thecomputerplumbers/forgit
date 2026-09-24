@@ -17,6 +17,7 @@ export type CreateAuthOptions = {
   secret: string;
   baseURL: string;
   trustedOrigins?: string[];
+  disableSignUp?: boolean;
   google?: { clientId: string; clientSecret: string };
   sendInvitationEmail?: (input: {
     id: string;
@@ -44,6 +45,7 @@ export type CreateAuthOptions = {
  * Machine access uses personal access tokens, not this session.
  */
 export function createAuth(options: CreateAuthOptions) {
+  const disableSignUp = options.disableSignUp ?? true;
   return betterAuth({
     database: drizzleAdapter(options.db, { provider: "sqlite", schema }),
     secret: options.secret,
@@ -55,11 +57,13 @@ export function createAuth(options: CreateAuthOptions) {
             clientId: options.google.clientId,
             clientSecret: options.google.clientSecret,
             prompt: "select_account",
+            disableSignUp,
           },
         }
       : undefined,
     emailAndPassword: {
       enabled: true,
+      disableSignUp,
       requireEmailVerification: false,
       revokeSessionsOnPasswordReset: true,
     },
@@ -83,6 +87,8 @@ export function createAuth(options: CreateAuthOptions) {
     databaseHooks: {
       user: {
         create: {
+          // Also covers SSO and any future provider that creates users.
+          before: async () => !disableSignUp,
           after: async (user) => {
             await options.onAuthEvent?.({ action: "auth.sign_up", userId: user.id });
           },
@@ -98,7 +104,7 @@ export function createAuth(options: CreateAuthOptions) {
     },
     plugins: [
       organization({
-        allowUserToCreateOrganization: true,
+        allowUserToCreateOrganization: !disableSignUp,
         cancelPendingInvitationsOnReInvite: true,
         sendInvitationEmail: options.sendInvitationEmail,
         organizationHooks: {

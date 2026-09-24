@@ -8,6 +8,7 @@
     "build": "vinext build",
     "start": "wrangler dev --config dist/server/wrangler.json",
     "cf:typegen": "wrangler types --env-interface CloudflareEnv worker-env.d.ts",
+    "init": "node scripts/init.mjs",
     "db:migrate:local": "wrangler d1 migrations apply DB --local --config wrangler.jsonc",
     "db:migrate": "wrangler d1 migrations apply DB --remote --config wrangler.jsonc",
     "typecheck": "tsc --noEmit"
@@ -15,6 +16,7 @@
   "dependencies": {
     "@better-auth/sso": "1.7.5",
     "@cloudflare/containers": "^0.0.31",
+    "@forgit/actions": "workspace:*",
     "@forgit/auth": "workspace:*",
     "@forgit/db": "workspace:*",
     "@forgit/domain": "workspace:*",

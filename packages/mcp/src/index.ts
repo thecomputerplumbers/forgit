@@ -2,6 +2,39 @@ import type { Services } from "@forgit/domain";
 import { ForgeError, type Actor } from "@forgit/domain";
 import { pullNodeId, repoNodeId } from "@forgit/github-compat";
 
+import { publicAction, type ActionsService } from "@forgit/actions";
+
+type ActionsExtension = {
+  service: ActionsService;
+  readLog: (key: string) => Promise<string | null>;
+  changed: (operation: string, runId?: string) => Promise<void>;
+};
+const ACTION_TOOLS: Tool[] = [
+  ["list_action_runs", "list", "List repository workflow runs."],
+  ["get_action_run", "get", "Read run, jobs, steps, logs metadata, and agent diagnosis."],
+  ["run_workflow", "run", "Dispatch a workflow at a ref; requires workflow:run."],
+  ["rerun_workflow", "rerun", "Re-run a completed workflow at its original exact SHA."],
+  ["cancel_action_run", "cancel", "Cancel an active workflow run."],
+  ["get_action_log", "log", "Read a redacted step log (last 32000 characters)."],
+].map(([name, operation, description]) => ({
+  name: name!,
+  description: description!,
+  inputSchema: {
+    type: "object",
+    properties: {
+      owner: { type: "string" },
+      repo: { type: "string" },
+      runId: { type: "string" },
+      workflow: { type: "string" },
+      ref: { type: "string" },
+      jobId: { type: "string" },
+      stepId: { type: "string" },
+      operation: { const: operation },
+    },
+    required: ["owner", "repo"],
+  },
+}));
+
 type Tool = {
   name: string;
   description: string;
@@ -171,6 +204,7 @@ export async function handleMcp(
   request: Request,
   services: Services,
   actor: Actor | null,
+  actions?: ActionsExtension,
 ): Promise<Response> {
   if (request.method === "GET") {
     return jsonRpc(
@@ -203,7 +237,11 @@ export async function handleMcp(
     return new Response(null, { status: 202 });
   }
   if (body.method === "tools/list") {
-    return jsonRpc({ jsonrpc: "2.0", id, result: { tools: MCP_TOOLS } });
+    return jsonRpc({
+      jsonrpc: "2.0",
+      id,
+      result: { tools: [...MCP_TOOLS, ...(actions ? ACTION_TOOLS : [])] },
+    });
   }
   if (body.method !== "tools/call") {
     return jsonRpc({ jsonrpc: "2.0", id, error: { code: -32601, message: "Method not found" } });
@@ -215,7 +253,15 @@ export async function handleMcp(
   const name = String(params.name ?? "");
   const args = (params.arguments ?? {}) as Record<string, unknown>;
   try {
-    const result = await callTool(name, args, services, actor);
+    const actionTool = actions && ACTION_TOOLS.find((t) => t.name === name);
+    const result = actionTool
+      ? await callActionTool(
+          actions!,
+          String((actionTool.inputSchema.properties.operation as { const: string }).const),
+          args,
+          actor,
+        )
+      : await callTool(name, args, services, actor);
     return jsonRpc({
       jsonrpc: "2.0",
       id,
@@ -403,4 +449,24 @@ function jsonRpc(body: unknown, status = 200) {
     status,
     headers: { "content-type": "application/json" },
   });
+}
+
+async function callActionTool(
+  extension: ActionsExtension,
+  operation: string,
+  args: Record<string, unknown>,
+  actor: Actor,
+) {
+  const owner = String(args.owner ?? ""),
+    repo = String(args.repo ?? "");
+  if (operation === "log") {
+    const run = await extension.service.get(actor, owner, repo, String(args.runId ?? ""));
+    const step = run.jobs.find((j) => j.id === args.jobId)?.steps.find((s) => s.id === args.stepId);
+    const text = step?.logKey ? await extension.readLog(step.logKey) : null;
+    return { log: text?.slice(-32000) ?? null, truncated: (text?.length ?? 0) > 32000 };
+  }
+  const result = await publicAction(extension.service, actor, owner, repo, operation, args);
+  if (["run", "rerun", "cancel"].includes(operation))
+    await extension.changed(operation, String(args.runId ?? ""));
+  return result;
 }

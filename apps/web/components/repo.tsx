@@ -14,11 +14,19 @@ export const PULL_ICON: Record<PullRequest["state"], IconName> = {
   closed: "pullClosed",
 };
 
-export type RepoTab = "Code" | "Pull requests" | "Commits" | "Branches" | "Tags" | "Settings";
+export type RepoTab =
+  | "Code"
+  | "Pull requests"
+  | "Commits"
+  | "Branches"
+  | "Tags"
+  | "Actions"
+  | "Settings";
 
 const TABS: Array<[RepoTab, IconName, string]> = [
   ["Code", "code", ""],
   ["Pull requests", "pull", "/pulls"],
+  ["Actions", "checkCircle", "/actions"],
   ["Commits", "history", "/commits"],
   ["Branches", "branch", "/branches"],
   ["Tags", "tag", "/tags"],

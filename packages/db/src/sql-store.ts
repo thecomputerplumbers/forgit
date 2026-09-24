@@ -691,6 +691,8 @@ export function createSqlStore(sql: Sql): ForgeStore {
     async listChecks(repositoryId, headSha) {
       const rows = await sql.all<{
         id: string;
+        producer?: "external" | "actions";
+        action_run_id?: string | null;
         repository_id: string;
         name: string;
         head_sha: string;
@@ -706,6 +708,8 @@ export function createSqlStore(sql: Sql): ForgeStore {
       ]);
       return rows.map((row) => ({
         id: row.id,
+        producer: row.producer ?? "external",
+        actionRunId: row.action_run_id ?? null,
         repositoryId: row.repository_id,
         name: row.name,
         headSha: row.head_sha,

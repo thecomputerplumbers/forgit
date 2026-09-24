@@ -1,0 +1,134 @@
+diff --git a/src/artifacts/source-control.ts b/src/artifacts/source-control.ts
+index 481724b271c3cd141b71d5bee1928932fdfafa00..7485aa58bf423f008e082ac0c0246f50a64c0b55 100644
+--- a/src/artifacts/source-control.ts
++++ b/src/artifacts/source-control.ts
+@@ -162,6 +162,7 @@ export class CloudflareArtifactsSourceControlProvider extends SourceControlProvi
+ 
+   private async getRepo(namespace: string, repo: string) {
+     this.assertRepository(namespace, repo);
++    if (!this.env.ARTIFACTS) throw new Error('ARTIFACTS binding is required by the Artifacts provider');
+     return this.env.ARTIFACTS.get(repo);
+   }
+ 
+diff --git a/src/ci/capabilities.ts b/src/ci/capabilities.ts
+index 9603fd2ff9548c4640fa202aa951ca4fc8256cb0..398c090eabd636187665c80c3b3a1eb07d9b4e02 100644
+--- a/src/ci/capabilities.ts
++++ b/src/ci/capabilities.ts
+@@ -14,6 +14,8 @@ import {
+ } from './cache';
+ import type { Bindings } from '../env';
+ import { SandboxRunner } from './runners/sandbox';
++import type { Runner } from './runners/runner';
++import type { DirectoryBackup } from '../pipeline/types';
+ import type {
+   SourceControlCheckout,
+   SourceControlProvider,
+@@ -79,7 +81,7 @@ export async function runCiStep<
+       command: input.command,
+       sensitiveValues: Object.values(prepared.extraEnv),
+     },
+-    () => executeStep(env, input, prepared),
++    () => executeStep(env, input, prepared, sourceControl.createRunner?.(env, input)),
+     (execution) => finalizeStep(env, input, prepared, execution)
+   );
+ }
+@@ -114,6 +116,7 @@ async function prepareStep(
+       input.cloudflareCredentials,
+       input.label
+     );
++    if (!env.CF_TOKEN) throw new Error('Cloudflare deployment credentials are not configured');
+     extraEnv.CLOUDFLARE_API_TOKEN = env.CF_TOKEN;
+     if (credentials.accountId) {
+       extraEnv.CLOUDFLARE_ACCOUNT_ID = credentials.accountId;
+@@ -150,9 +153,10 @@ async function prepareStep(
+ async function executeStep(
+   env: Bindings,
+   input: CiRunStepInput,
+-  prepared: PreparedStep
++  prepared: PreparedStep,
++  customRunner?: Runner<DirectoryBackup>
+ ): Promise<StepExecution> {
+-  const runner = new SandboxRunner(env);
++  const runner = customRunner ?? new SandboxRunner(env);
+   const runInput = {
+     label: input.label,
+     command: input.command,
+diff --git a/src/env.ts b/src/env.ts
+index bf350484ff9f6a861b661800e48ed2b52a10e77b..265f6e3421ac5c33d3aaab28908b6d8805b26e5f 100644
+--- a/src/env.ts
++++ b/src/env.ts
+@@ -10,7 +10,7 @@ export type CheckRunRef = {
+ 
+ type Secrets = {
+   [name: string]: unknown;
+-  CF_TOKEN: string;
++  CF_TOKEN?: string;
+   R2_ACCESS_KEY_ID: string;
+   R2_SECRET_ACCESS_KEY: string;
+ };
+@@ -18,14 +18,14 @@ type Secrets = {
+ // Runtime contract owned by the CI package. A deployable Worker can intersect
+ // this with its Wrangler-generated CloudflareBindings for configuration checks.
+ export type Bindings = Secrets & {
+-  ARTIFACTS: Artifacts;
++  ARTIFACTS?: Artifacts;
+   BACKUP_BUCKET: R2Bucket;
+   BACKUP_BUCKET_NAME: string;
+   CLOUDFLARE_ACCOUNT_ID: string;
+   SANDBOX: DurableObjectNamespace<import('./ci/sandbox').CiSandbox>;
+   CI_WORKFLOW: Workflow<
+     import('./pipeline/types').CiParams<
+-      import('./pipeline/types').CloudflareArtifacts
++      import('./pipeline/types').SourceControlProviderDefinition
+     >
+   >;
+ };
+diff --git a/src/source-control-adapter.ts b/src/source-control-adapter.ts
+index 299c0797a6b5400bf31633cfe22f242d8005f5ee..21489b778b811e121c839470935498d605bc5623 100644
+--- a/src/source-control-adapter.ts
++++ b/src/source-control-adapter.ts
+@@ -2,6 +2,8 @@
+ // SPDX-License-Identifier: Apache-2.0
+ 
+ import type { Bindings } from './env';
++import type { Runner } from './ci/runners/runner';
++import type { DirectoryBackup, CiRunStepInput } from './pipeline/types';
+ import type {
+   CloudflareArtifacts,
+   SourceControlProviderDefinition,
+@@ -23,8 +25,9 @@ export type SourceControlRepository = {
+ export type SourceControlRepositoryFilter = Partial<SourceControlRepository>;
+ 
+ export type SourceControlAdapter<
+-  TProvider extends SourceControlProviderDefinition = CloudflareArtifacts,
++  TProvider extends SourceControlProviderDefinition = SourceControlProviderDefinition,
+ > = {
++  createRunner?(env: Bindings, input: CiRunStepInput): Runner<DirectoryBackup>;
+   readonly id: TProvider['id'];
+   readonly repository: SourceControlRepositoryFilter;
+   create(env: Bindings): SourceControlProvider<TProvider>;
+diff --git a/src/source-control.ts b/src/source-control.ts
+index 83946a318ec5493d258581f33babf8ed43a9e909..ab5ad0b10d39b704620a14a18ea8bb7d31b0108e 100644
+--- a/src/source-control.ts
++++ b/src/source-control.ts
+@@ -33,7 +33,7 @@ export function matchSourceControlTreeBlobs(
+ function globToRegExp(glob: string): RegExp {
+   let pattern = '^';
+   for (let index = 0; index < glob.length; index++) {
+-    const char = glob[index];
++    const char = glob[index]!;
+     if (char === '*' && glob[index + 1] === '*') {
+       if (glob[index + 2] === '/') {
+         pattern += '(?:.*/)?';
+diff --git a/src/worker-source-control.ts b/src/worker-source-control.ts
+index efae4056c8defe1dd95eee099559b09e0a453c0e..33a7ab7e7586d2e85060a34a0660c33bf704588b 100644
+--- a/src/worker-source-control.ts
++++ b/src/worker-source-control.ts
+@@ -3,3 +3,7 @@
+ 
+ export { cloudflareArtifacts } from './source-control-adapter';
+ export type { SourceControlAdapter } from './source-control-adapter';
++
++export * from './source-control';
++export type { SourceControlProviderDefinition, CiRunStepInput, DirectoryBackup } from './pipeline/types';
++export type { Runner, RunStepInput, RunStepResult } from './ci/runners/runner';

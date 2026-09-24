@@ -5,6 +5,8 @@ import { handleMcp } from "@forgit/mcp";
 import { logEvent, requestIdFrom } from "@forgit/observability";
 import vinextWorker from "vinext/server/app-router-entry";
 
+import { actionsHttp } from "../lib/actions-http.ts";
+import { dispatchActions, getActions } from "../lib/actions.ts";
 import { getServices } from "../lib/forge.ts";
 import { GIT_CONTAINER_NAME } from "../lib/git-container.ts";
 
@@ -22,8 +24,14 @@ export class GitContainer extends Container<Cloudflare.Env> {
     if (env.WALGIT_TOKEN_FORGIT) vars.WALGIT_TOKEN_FORGIT = env.WALGIT_TOKEN_FORGIT;
     if (env.MERGE_INTERNAL_TOKEN) vars.MERGE_INTERNAL_TOKEN = env.MERGE_INTERNAL_TOKEN;
     if (env.R2_ENDPOINT) vars.WALGIT__STORE__S3__ENDPOINT = env.R2_ENDPOINT;
+    if (env.GIT_BUCKET) vars.WALGIT__STORE__BUCKET = env.GIT_BUCKET;
     if (env.R2_ACCESS_KEY_ID) vars.AWS_ACCESS_KEY_ID = env.R2_ACCESS_KEY_ID;
     if (env.R2_SECRET_ACCESS_KEY) vars.AWS_SECRET_ACCESS_KEY = env.R2_SECRET_ACCESS_KEY;
+    if (env.ACTIONS_EVENT_SECRET) {
+      vars.WALGIT__EVENTS__WEBHOOK_URL = `${env.APP_URL}/api/actions/events`;
+      vars.WALGIT__EVENTS__WEBHOOK_SECRET = env.ACTIONS_EVENT_SECRET;
+      vars.WALGIT__EVENTS__SWEEP_INTERVAL = "10s";
+    }
     this.envVars = vars;
   }
 
@@ -56,11 +64,17 @@ const READ_LIMIT = { windowMs: 60_000, max: 120 };
 const WRITE_LIMIT = { windowMs: 60_000, max: 30 };
 
 export default {
+  async scheduled(_controller: ScheduledController, _env: Cloudflare.Env, ctx: ExecutionContext) {
+    ctx.waitUntil(dispatchActions());
+  },
   async fetch(request: Request, env: Cloudflare.Env, ctx: ExecutionContext) {
     const requestId = requestIdFrom(request.headers);
     const url = new URL(request.url);
     const classified = classifyPath(url.pathname, request.method);
     try {
+      if (url.pathname === "/api/actions/events" || url.pathname === "/api/actions/internal") {
+        return (await actionsHttp(request, null, ctx))!;
+      }
       if (classified.kind === "health") {
         return json({ ok: true, plane: "control", requestId });
       }
@@ -107,11 +121,26 @@ async function api(
   const key = `api:${actor?.userId ?? request.headers.get("cf-connecting-ip") ?? "anon"}`;
   const rate = await services.store.takeRate(key, services.store.now(), 60_000, actor ? 300 : 30);
   if (!rate.ok) return json({ message: "Rate limit exceeded" }, 429, requestId);
+  const actionResponse = await actionsHttp(request, actor, ctx);
+  if (actionResponse) return actionResponse;
   const context = { services, actor, origin: new URL(env.APP_URL).origin };
   const response = request.url.includes("/api/graphql")
     ? await handleGithubGraphql(request, context)
     : urlPath(request) === "/mcp"
-      ? await handleMcp(request, services, actor)
+      ? await handleMcp(request, services, actor, {
+          service: getActions(),
+          readLog: async (key) => (await env.ACTIONS_BUCKET?.get(key))?.text() ?? null,
+          changed: async (operation, id) => {
+            if (operation === "cancel" && env.ACTIONS_WORKER)
+              await env.ACTIONS_WORKER.fetch(
+                new Request(`https://actions.internal/cancel/${id}`, {
+                  method: "POST",
+                  headers: { authorization: `Bearer ${env.ACTIONS_INTERNAL_TOKEN}` },
+                }),
+              );
+            else ctx.waitUntil(dispatchActions());
+          },
+        })
       : await handleGithubRest(request, context);
   logEvent("api", {
     requestId,

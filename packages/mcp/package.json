@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@forgit/actions": "workspace:*",
     "@forgit/domain": "workspace:*",
     "@forgit/github-compat": "workspace:*"
   },

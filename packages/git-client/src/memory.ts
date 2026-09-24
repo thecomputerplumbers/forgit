@@ -102,6 +102,10 @@ export class MemoryGit implements GitClient {
   }
 
   private commitOf(repo: Repo, ref: string): Commit | null {
+    if (ref.startsWith("refs/heads/"))
+      return repo.commits.get(repo.refs.get(ref.slice(11)) ?? "") ?? null;
+    if (ref.startsWith("refs/tags/"))
+      return repo.commits.get(repo.tags.get(ref.slice(10)) ?? "") ?? null;
     const shaValue =
       repo.refs.get(ref) ?? repo.tags.get(ref) ?? (repo.commits.has(ref) ? ref : null);
     if (!shaValue) return null;

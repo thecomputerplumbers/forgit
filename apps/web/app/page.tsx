@@ -1,4 +1,6 @@
 import type { AuditEvent, PullRequest } from "@forgit/domain";
+import { env } from "cloudflare:workers";
+import { headers } from "next/headers";
 
 import { CodeBlock, CopyButton, ListFilter } from "@/components/client";
 import { Icon } from "@/components/icons";
@@ -10,11 +12,16 @@ import { animalFor } from "@/lib/themes";
 import { plural } from "@/lib/format";
 import { loadLogins } from "@/lib/repo-page";
 import { requireOrganization } from "@/lib/session";
+import { auth } from "@/lib/auth";
+import { BILLING_PLANS } from "@/lib/billing-plans";
+import { Logo } from "@/components/shell";
 
 /** Beyond this many repositories the feed only reads the most recently updated. */
 const ACTIVITY_REPOS = 20;
 
 export default async function HomePage() {
+  if (env.HOSTED_MODE === "true" && !(await auth.api.getSession({ headers: await headers() })))
+    return <CloudLanding />;
   const { services, actor, user, organization } = await requireOrganization();
   const repos = (await services.listVisibleRepositories(actor))
     .filter((repo) => repo.owner === organization.slug)
@@ -268,6 +275,67 @@ export default async function HomePage() {
         </div>
       </div>
     </Shell>
+  );
+}
+
+function CloudLanding() {
+  return (
+    <div className="cloud-landing">
+      <header className="cloud-nav">
+        <Logo />
+        <a className="btn btn-primary" href="/sign-in">
+          Sign in
+        </a>
+      </header>
+      <main>
+        <section className="cloud-hero">
+          <span className="cloud-eyebrow">FORGIT CLOUD · PRIVATE PREVIEW</span>
+          <h1>Code, checks, and the next fix. Together.</h1>
+          <p>
+            Host Git repositories, review pull requests, and run Forgit Actions on Cloudflare. When
+            a workflow fails, get a verified repair proposal to review.
+          </p>
+          <div className="cloud-actions">
+            <a
+              className="btn btn-primary"
+              href="mailto:seth@thecomputerplumbers.com?subject=Forgit%20Cloud%20access"
+            >
+              Request access
+            </a>
+            <a className="btn" href="/sign-in">
+              Already invited? Sign in
+            </a>
+          </div>
+          <p className="cloud-note">Public checkout and signup are being prepared.</p>
+        </section>
+        <section aria-labelledby="cloud-pricing-title" className="cloud-pricing">
+          <div className="cloud-section-heading">
+            <span className="cloud-eyebrow">SIMPLE BASE PLANS</span>
+            <h2 id="cloud-pricing-title">Start small. Pay for the compute you use.</h2>
+            <p>Actions and other metered usage are billed separately from the base plan.</p>
+          </div>
+          <div className="cloud-plan-grid">
+            {Object.values(BILLING_PLANS).map((plan) => (
+              <article className="cloud-plan" key={plan.name}>
+                <h3>{plan.name}</h3>
+                <p className="cloud-price">
+                  ${(plan.monthlyCents / 100).toLocaleString("en-US")}
+                  <span>/month</span>
+                </p>
+                <p>
+                  {plan.name === "Developer"
+                    ? "A paid home for your own projects."
+                    : plan.name === "Business"
+                      ? "One place for a team to build and ship."
+                      : "Security and support for larger organizations."}
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
+      </main>
+      <footer className="cloud-footer">forgit · Built on Cloudflare</footer>
+    </div>
   );
 }
 

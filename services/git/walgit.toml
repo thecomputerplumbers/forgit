@@ -41,6 +41,11 @@ max_bytes = "8GiB"
 interval = "60s"
 disk = "ssd"
 
+[events]
+# Bound the recovery delay for accepted-push delivery to Forgit Actions.
+# The Worker supplies the webhook URL and signing secret at container start.
+sweep_interval = "10s"
+
 [telemetry]
 log_format = "json"
 log_filter = "info"

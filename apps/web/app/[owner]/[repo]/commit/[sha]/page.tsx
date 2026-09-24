@@ -28,12 +28,27 @@ export default async function CommitPage({
   const listed = await loadGit(() => services.git.commit(owner, name, sha));
   if ("value" in listed && !listed.value) notFound();
   const detail = "value" in listed ? listed.value : null;
+  const checks = await services.store.listChecks(repo.id, sha);
   return (
     <Shell organization={organization} user={user}>
       <RepoHeader current="Commits" owner={owner} repo={repo} />
       <div className="container page stack">
         {"message" in listed ? (
           <Alert title="Git storage did not answer">{listed.message}</Alert>
+        ) : null}
+        {checks.some((c) => c.actionRunId) ? (
+          <Box title="Actions">
+            <ul>
+              {checks
+                .filter((c) => c.actionRunId)
+                .map((c) => (
+                  <li key={c.id}>
+                    <a href={`/${owner}/${name}/actions/${c.actionRunId}`}>{c.name}</a> ·{" "}
+                    {c.conclusion ?? c.status}
+                  </li>
+                ))}
+            </ul>
+          </Box>
         ) : null}
         {detail ? (
           <>
