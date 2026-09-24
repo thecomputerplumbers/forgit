@@ -2,6 +2,7 @@ import { env } from "cloudflare:workers";
 
 import { SignInForm } from "@/components/auth-forms";
 import { AuthShell } from "@/components/shell";
+import { signUpDisabled } from "@/lib/sign-up-policy";
 
 export const metadata = { title: "Sign in" };
 
@@ -23,9 +24,11 @@ export default async function SignInPage({
           next={next}
         />
       </div>
-      <p className="auth-switch">
-        New here? <a href={`/sign-up${query}`}>Create an account</a>
-      </p>
+      {!signUpDisabled(env.DISABLE_SIGN_UP) ? (
+        <p className="auth-switch">
+          New here? <a href={`/sign-up${query}`}>Create an account</a>
+        </p>
+      ) : null}
       <p className="auth-switch">
         <a href={`/sign-in/sso${query}`}>Sign in with organization SSO</a>
       </p>

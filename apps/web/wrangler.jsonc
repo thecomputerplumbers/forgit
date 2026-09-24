@@ -14,6 +14,7 @@
   },
   "vars": {
     "APP_URL": "https://git.thecomputerplumbers.com",
+    "DISABLE_SIGN_UP": "true",
     "ACTIONS_ENABLED": "true",
     "R2_ENDPOINT": "https://865d0c927a18e87c0a0701b8d1f18ee9.r2.cloudflarestorage.com",
   },

@@ -12,6 +12,7 @@ declare namespace Cloudflare {
     ASSETS: Fetcher;
     EMAIL: SendEmail;
     APP_URL: string;
+    DISABLE_SIGN_UP?: string;
     BETTER_AUTH_SECRET?: string;
     GOOGLE_CLIENT_ID?: string;
     GOOGLE_CLIENT_SECRET?: string;

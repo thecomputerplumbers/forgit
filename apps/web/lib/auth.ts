@@ -5,6 +5,7 @@ import { d1Sql } from "@forgit/db/sql-store";
 
 import { getServices } from "./forge.ts";
 import { applyInvitationGrants } from "./invitation-grants.ts";
+import { signUpDisabled } from "./sign-up-policy.ts";
 
 export const auth = lazyAuth(() => {
   if (!env.APP_URL) throw new Error("APP_URL must be configured");
@@ -14,6 +15,7 @@ export const auth = lazyAuth(() => {
     secret: resolveSecret(env.BETTER_AUTH_SECRET, origin),
     baseURL: origin,
     trustedOrigins: [origin, "https://auth.thecomputerplumbers.com"],
+    disableSignUp: signUpDisabled(env.DISABLE_SIGN_UP),
     google:
       env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
         ? { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET }

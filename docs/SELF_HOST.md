@@ -43,7 +43,7 @@ printf '%s' "$R2_SECRET_ACCESS_KEY" | wrangler secret put R2_SECRET_ACCESS_KEY
 
 Create a Google Cloud Web OAuth client with `https://git.thecomputerplumbers.com/api/auth/callback/google` as an authorized redirect URI. A separate client in the same Google Cloud project keeps the Forgit secret independent from the one used by `auth.thecomputerplumbers.com`. The existing client can also work if that redirect URI is added to it, but Forgit must receive its client ID and secret either way.
 
-Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` as Worker secrets using `wrangler secret put` from `apps/web`. The branded button appears on `/sign-in` when both are configured. Google sign-in creates a Forgit account for a new email or links to an existing Forgit account when Google verifies the same email. It does not create or sign in to an account on `auth.thecomputerplumbers.com`.
+Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` as Worker secrets using `wrangler secret put` from `apps/web`. The branded button appears on `/sign-in` when both are configured. With the default `DISABLE_SIGN_UP=true`, Google can sign in existing users but cannot create new ones. It does not create or sign in to an account on `auth.thecomputerplumbers.com`.
 
 Attach the hostname `git.thecomputerplumbers.com` to this worker (the wrangler route is already a custom domain).
 
@@ -60,7 +60,13 @@ The container image build compiles pinned walgit `80e9a20b29e29aefd16a4dae6f8e27
 
 ## First organization
 
-Open the site, create an account, and create an organization. The slug is the `{owner}` in clone URLs. Create a repository, then a personal access token under Tokens.
+Public signups are disabled by default (`DISABLE_SIGN_UP=true`). After applying D1 migrations, initialize the first owner and organization from the trusted operator machine:
+
+```sh
+pnpm --filter web run init --remote --email owner@example.com --name "Owner Name" --organization "Company Name" --slug company
+```
+
+The command prompts for the owner's password without echoing it and refuses to run when an organization already exists. Use `--local` instead of `--remote` for local development. The slug is the `{owner}` in clone URLs. Sign in, create a repository, then create a personal access token under Tokens. On an existing instance, initialization is unnecessary; deploying this setting closes signup while existing accounts keep signing in. Temporarily setting `DISABLE_SIGN_UP=false` enables self registration and organization creation for development. With signup closed, invitations can only be accepted by people who already have an account; invite-only registration is not yet implemented.
 
 ```sh
 git -c http.extraHeader="Authorization: Bearer $FORGIT_TOKEN" \
