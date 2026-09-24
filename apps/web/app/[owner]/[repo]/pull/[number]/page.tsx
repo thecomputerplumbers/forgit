@@ -543,7 +543,15 @@ export default async function PullPage({
                         return (
                           <li key={check.id} title={check.summary || check.title}>
                             <Icon className={`icon ${tone}`} name={icon} />
-                            <span style={{ flex: 1 }}>{check.name}</span>
+                            <span style={{ flex: 1 }}>
+                              {check.actionRunId ? (
+                                <a href={`/${owner}/${name}/actions/${check.actionRunId}`}>
+                                  {check.name}
+                                </a>
+                              ) : (
+                                check.name
+                              )}
+                            </span>
                             <span className="muted">
                               {check.conclusion ?? check.status.replace("_", " ")}
                             </span>

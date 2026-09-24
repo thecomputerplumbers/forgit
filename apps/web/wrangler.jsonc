@@ -39,4 +39,8 @@
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GitContainer"] }],
   "observability": { "enabled": true, "head_sampling_rate": 1 },
   "upload_source_maps": true,
+  "triggers": { "crons": ["* * * * *"] },
+  "queues": { "producers": [{ "binding": "ACTIONS_QUEUE", "queue": "forgit-actions" }] },
+  "services": [{ "binding": "ACTIONS_WORKER", "service": "forgit-actions" }],
+  "r2_buckets": [{ "binding": "ACTIONS_BUCKET", "bucket_name": "forgit-actions" }],
 }

@@ -32,7 +32,10 @@ export function evaluateMergePolicy(
     (review) => review.state === "changes_requested" && review.headSha === pr.headSha,
   );
   const required = rules.requiredChecks.map((name) => {
-    const run = checks.find((check) => check.name === name);
+    const run = checks.find(
+      (check) =>
+        check.name === name && (!name.startsWith("actions/") || check.producer === "actions"),
+    );
     const state: CheckState = !run
       ? "missing"
       : run.status !== "completed"

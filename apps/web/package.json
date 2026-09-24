@@ -15,6 +15,7 @@
   "dependencies": {
     "@better-auth/sso": "1.7.5",
     "@cloudflare/containers": "^0.0.31",
+    "@forgit/actions": "workspace:*",
     "@forgit/auth": "workspace:*",
     "@forgit/db": "workspace:*",
     "@forgit/domain": "workspace:*",

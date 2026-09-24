@@ -1,5 +1,5 @@
 {
-  "name": "@forgit/mcp",
+  "name": "@forgit/actions",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -10,9 +10,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@forgit/actions": "workspace:*",
+    "@forgit/auth": "workspace:*",
+    "@forgit/db": "workspace:*",
     "@forgit/domain": "workspace:*",
-    "@forgit/github-compat": "workspace:*"
+    "yaml": "^2.8.1",
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@forgit/typescript-config": "workspace:*",

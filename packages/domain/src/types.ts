@@ -82,6 +82,8 @@ export type Comment = {
 };
 
 export type CheckRun = {
+  producer?: "external" | "actions";
+  actionRunId?: string | null;
   id: string;
   repositoryId: string;
   name: string;

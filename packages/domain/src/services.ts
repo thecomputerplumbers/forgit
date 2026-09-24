@@ -492,7 +492,10 @@ export function createServices(
         summary?: string;
       },
     ) {
-      const { repo } = await requireRepo(actor, owner, name, "write");
+      const { repo } = await requireRepo(actor, owner, name, "read");
+      await requireRepo({ ...actor, tokenScopes: null }, owner, name, "write");
+      if (input.name.startsWith("actions/"))
+        throw new ForgeError("Actions checks are reported by the runner", 403, "forbidden");
       if (actor.tokenScopes && !hasScope(actor.tokenScopes, "checks:write")) {
         throw new ForgeError("Forbidden", 403, "forbidden");
       }

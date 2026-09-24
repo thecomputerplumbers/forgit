@@ -1,6 +1,13 @@
 declare namespace Cloudflare {
   interface Env {
     DB: D1Database;
+    ACTIONS_ENABLED?: string;
+    ACTIONS_INTERNAL_TOKEN?: string;
+    ACTIONS_EVENT_SECRET?: string;
+    ACTIONS_ENCRYPTION_KEY?: string;
+    ACTIONS_QUEUE?: Queue<{ runId: string }>;
+    ACTIONS_WORKER?: Fetcher;
+    ACTIONS_BUCKET?: R2Bucket;
     GIT_CONTAINER: DurableObjectNamespace;
     ASSETS: Fetcher;
     APP_URL: string;

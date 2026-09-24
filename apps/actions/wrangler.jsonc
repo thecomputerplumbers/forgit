@@ -1,0 +1,40 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "forgit-actions",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-23",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "vars": {
+    "FORGIT_ORIGIN": "https://git.thecomputerplumbers.com",
+    "BACKUP_BUCKET_NAME": "forgit-actions",
+    "CLOUDFLARE_ACCOUNT_ID": "865d0c927a18e87c0a0701b8d1f18ee9",
+  },
+  "services": [{ "binding": "FORGIT", "service": "forgit" }],
+  "workflows": [
+    { "name": "forgit-actions", "binding": "CI_WORKFLOW", "class_name": "ActionsWorkflow" },
+  ],
+  "durable_objects": { "bindings": [{ "name": "SANDBOX", "class_name": "CiSandbox" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["CiSandbox"] }],
+  "containers": [
+    {
+      "class_name": "CiSandbox",
+      "image": "./Dockerfile",
+      "max_instances": 4,
+      "instance_type": "standard-2",
+    },
+  ],
+  "r2_buckets": [{ "binding": "BACKUP_BUCKET", "bucket_name": "forgit-actions" }],
+  "queues": {
+    "consumers": [
+      {
+        "queue": "forgit-actions",
+        "max_batch_size": 5,
+        "max_retries": 10,
+        "dead_letter_queue": "forgit-actions-dead",
+      },
+    ],
+  },
+  "ai": { "binding": "AI" },
+  "observability": { "enabled": true },
+}
