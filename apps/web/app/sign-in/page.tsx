@@ -1,3 +1,5 @@
+import { env } from "cloudflare:workers";
+
 import { SignInForm } from "@/components/auth-forms";
 import { AuthShell } from "@/components/shell";
 
@@ -15,7 +17,11 @@ export default async function SignInPage({
       <div className="auth-card">
         <h1>Sign in to forgit</h1>
         <p>Welcome back. Enter your details to continue.</p>
-        <SignInForm mode="sign-in" next={next} />
+        <SignInForm
+          googleEnabled={Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET)}
+          mode="sign-in"
+          next={next}
+        />
       </div>
       <p className="auth-switch">
         New here? <a href={`/sign-up${query}`}>Create an account</a>

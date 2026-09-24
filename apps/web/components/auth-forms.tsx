@@ -22,7 +22,15 @@ export function safeNext(next: string | undefined): string {
   return next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
 }
 
-export function SignInForm({ mode, next }: { mode: "sign-in" | "sign-up"; next?: string }) {
+export function SignInForm({
+  mode,
+  next,
+  googleEnabled = false,
+}: {
+  mode: "sign-in" | "sign-up";
+  next?: string;
+  googleEnabled?: boolean;
+}) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   async function submit(formData: FormData) {
@@ -45,40 +53,73 @@ export function SignInForm({ mode, next }: { mode: "sign-in" | "sign-up"; next?:
     }
     window.location.href = safeNext(next);
   }
+  async function signInWithGoogle() {
+    setError(null);
+    setPending(true);
+    try {
+      const result = await authClient.signIn.social({
+        provider: "google",
+        callbackURL: safeNext(next),
+      });
+      if (result.error) {
+        setError(result.error.message ?? "Could not start Google sign-in");
+        setPending(false);
+      }
+    } catch {
+      setError("Could not start Google sign-in");
+      setPending(false);
+    }
+  }
   return (
-    <form action={submit} className="form">
-      {mode === "sign-up" ? (
-        <label className="field">
-          <span className="field-label">Full name</span>
-          <input name="name" required autoComplete="name" placeholder="Ada Lovelace" />
-        </label>
+    <div className="form">
+      {mode === "sign-in" && googleEnabled ? (
+        <>
+          <button
+            aria-label="Sign in with Google"
+            className="google-sign-in"
+            disabled={pending}
+            onClick={signInWithGoogle}
+            type="button"
+          >
+            <img alt="" height={40} src="/brand/google-signin.svg" width={180} />
+          </button>
+          <div className="auth-divider">or sign in with email</div>
+        </>
       ) : null}
-      <label className="field">
-        <span className="field-label">Email</span>
-        <input
-          name="email"
-          type="email"
-          required
-          autoComplete="email"
-          placeholder="you@company.com"
-        />
-      </label>
-      <label className="field">
-        <span className="field-label">Password</span>
-        <input
-          name="password"
-          type="password"
-          required
-          minLength={8}
-          autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
-        />
-        {mode === "sign-up" ? <span className="field-hint">At least 8 characters.</span> : null}
-      </label>
-      <FormError message={error} />
-      <button className="btn btn-primary btn-block" disabled={pending} type="submit">
-        {pending ? "Please wait…" : mode === "sign-in" ? "Sign in" : "Create account"}
-      </button>
-    </form>
+      <form action={submit} className="form">
+        {mode === "sign-up" ? (
+          <label className="field">
+            <span className="field-label">Full name</span>
+            <input name="name" required autoComplete="name" placeholder="Ada Lovelace" />
+          </label>
+        ) : null}
+        <label className="field">
+          <span className="field-label">Email</span>
+          <input
+            name="email"
+            type="email"
+            required
+            autoComplete="email"
+            placeholder="you@company.com"
+          />
+        </label>
+        <label className="field">
+          <span className="field-label">Password</span>
+          <input
+            name="password"
+            type="password"
+            required
+            minLength={8}
+            autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
+          />
+          {mode === "sign-up" ? <span className="field-hint">At least 8 characters.</span> : null}
+        </label>
+        <FormError message={error} />
+        <button className="btn btn-primary btn-block" disabled={pending} type="submit">
+          {pending ? "Please wait…" : mode === "sign-in" ? "Sign in" : "Create account"}
+        </button>
+      </form>
+    </div>
   );
 }
 

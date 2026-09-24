@@ -12,6 +12,10 @@ export const auth = lazyAuth(() => {
     secret: resolveSecret(env.BETTER_AUTH_SECRET, origin),
     baseURL: origin,
     trustedOrigins: [origin, "https://auth.thecomputerplumbers.com"],
+    google:
+      env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+        ? { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET }
+        : undefined,
     onAuthEvent: async (event) => {
       await recordAuthEvent(getServices("auth").store, event);
     },
