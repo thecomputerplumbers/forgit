@@ -2,6 +2,10 @@ import { InviteForm } from "@/components/auth-forms";
 import { Shell } from "@/components/shell";
 import { Avatar, Badge, Box, PageHeader } from "@/components/ui";
 import { requireOrganization } from "@/lib/session";
+import { d1Sql } from "@forgit/db/sql-store";
+import { env } from "cloudflare:workers";
+import { listPendingInvitations } from "@/lib/invitation-grants";
+import { CopyField } from "@/components/client";
 
 export const metadata = { title: "Members" };
 
@@ -11,6 +15,12 @@ export default async function MembersPage() {
   const origin = new URL(services.cloneUrl(organization.slug, "x")).origin;
   const me = members.find((member) => member.userId === user.id);
   const canInvite = me?.role === "owner" || me?.role === "admin";
+  const [repositories, invitations] = canInvite
+    ? await Promise.all([
+        services.store.listRepositoriesForOrg(organization.id),
+        listPendingInvitations(d1Sql(env.DB), organization.id, services.store.now()),
+      ])
+    : [[], []];
   return (
     <Shell organization={organization} user={user}>
       <div className="container container-narrow page">
@@ -45,10 +55,37 @@ export default async function MembersPage() {
           </Box>
           {canInvite ? (
             <Box
-              description="They join as a member. Give them repository access from each repository's settings."
+              description="Choose repository access now. It takes effect when they accept."
               title="Invite someone"
             >
-              <InviteForm origin={origin} />
+              <InviteForm
+                origin={origin}
+                repositories={repositories
+                  .filter((repository) => !repository.archived)
+                  .map((repository) => ({ id: repository.id, name: repository.name }))}
+              />
+            </Box>
+          ) : null}
+          {canInvite && invitations.length ? (
+            <Box title="Pending invitations">
+              <ul className="list">
+                {invitations.map((invitation) => (
+                  <li key={invitation.id}>
+                    <div className="list-main">
+                      <div className="list-title">{invitation.email}</div>
+                      <div className="list-meta">
+                        {invitation.repositoryName
+                          ? `${invitation.repositoryName} · ${invitation.repositoryRole} access`
+                          : "Organization only"}
+                      </div>
+                      <CopyField
+                        label="Invitation link"
+                        value={`${origin}/invitations/${invitation.id}`}
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </Box>
           ) : null}
         </div>

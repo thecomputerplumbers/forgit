@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { authClient } from "@/lib/auth-client";
+import { inviteMemberAction } from "@/app/actions";
 
 import { CopyField } from "./client";
 import { Icon } from "./icons";
@@ -193,7 +195,14 @@ export function CreateOrganizationForm({ host }: { host: string }) {
   );
 }
 
-export function InviteForm({ origin }: { origin: string }) {
+export function InviteForm({
+  origin,
+  repositories,
+}: {
+  origin: string;
+  repositories: { id: string; name: string }[];
+}) {
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [link, setLink] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -201,19 +210,18 @@ export function InviteForm({ origin }: { origin: string }) {
     setError(null);
     setLink(null);
     setPending(true);
-    const email = String(formData.get("email") ?? "");
-    const result = await authClient.organization.inviteMember({ email, role: "member" });
+    const result = await inviteMemberAction(formData);
     setPending(false);
-    if (result.error) {
-      setError(result.error.message ?? "Invite failed");
+    if ("error" in result) {
+      setError(result.error);
       return;
     }
-    const id = result.data?.id;
-    setLink(id ? `${origin}/invitations/${id}` : "");
+    setLink(`${origin}/invitations/${result.id}`);
+    router.refresh();
   }
   return (
     <div className="stack">
-      <form action={submit} className="row">
+      <form action={submit} className="form">
         <input
           aria-label="Email address"
           name="email"
@@ -222,6 +230,24 @@ export function InviteForm({ origin }: { origin: string }) {
           style={{ flex: 1, minWidth: 220 }}
           type="email"
         />
+        <label className="field">
+          <span className="field-label">Repository access</span>
+          <select name="repository" defaultValue="">
+            <option value="">Organization only</option>
+            {repositories.map((repository) => (
+              <option key={repository.id} value={repository.id}>
+                {repository.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
+          <span className="field-label">Repository role</span>
+          <select name="role" defaultValue="write">
+            <option value="read">Read</option>
+            <option value="write">Write</option>
+          </select>
+        </label>
         <button className="btn btn-primary" disabled={pending} type="submit">
           <Icon name="plus" /> {pending ? "Inviting…" : "Invite"}
         </button>
@@ -234,7 +260,7 @@ export function InviteForm({ origin }: { origin: string }) {
           </div>
           {link ? (
             <>
-              <p>Send this link. They open it after signing in to join the organization.</p>
+              <p>Invitation created. They can accept it from the email or this link.</p>
               <CopyField label="Invitation link" value={link} />
             </>
           ) : (

@@ -2,11 +2,61 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 
 import { ForgeError } from "@forgit/domain";
 import { parseScopes } from "@forgit/auth/scopes";
 
 import { requireForge, requireOrganization } from "@/lib/session";
+import { auth } from "@/lib/auth";
+import { d1Sql } from "@forgit/db/sql-store";
+import { env } from "cloudflare:workers";
+import { queueInvitationGrant } from "@/lib/invitation-grants";
+
+export async function inviteMemberAction(
+  formData: FormData,
+): Promise<{ id: string } | { error: string }> {
+  const { services, user, organization } = await requireOrganization();
+  const member = await services.store.getOrgMember(organization.id, user.id);
+  if (member?.role !== "owner" && member?.role !== "admin") {
+    return { error: "Only organization owners and admins can invite members" };
+  }
+  const repositoryId = String(formData.get("repository") ?? "");
+  const role = String(formData.get("role") ?? "write");
+  if (repositoryId && role !== "read" && role !== "write") {
+    return { error: "Choose read or write repository access" };
+  }
+  if (repositoryId) {
+    const repository = await services.store.getRepository(repositoryId);
+    if (!repository || repository.organizationId !== organization.id || repository.archived) {
+      return { error: "Choose a repository in this organization" };
+    }
+  }
+  try {
+    const invitation = await auth.api.createInvitation({
+      body: {
+        email: String(formData.get("email") ?? "").trim(),
+        role: "member",
+        organizationId: organization.id,
+        resend: true,
+      },
+      headers: await headers(),
+    });
+    if (repositoryId) {
+      await queueInvitationGrant(d1Sql(env.DB), {
+        invitationId: invitation.id,
+        organizationId: organization.id,
+        repositoryId,
+        role: role as "read" | "write",
+        now: Date.now(),
+      });
+    }
+    revalidatePath("/settings/members");
+    return { id: invitation.id };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Could not send invitation" };
+  }
+}
 
 export async function createRepositoryAction(formData: FormData) {
   const { services, actor, organization } = await requireOrganization();

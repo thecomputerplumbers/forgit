@@ -24,6 +24,12 @@ export type CreateAuthOptions = {
     role: string;
     organization: { name: string };
   }) => Promise<void>;
+  onInvitationAccepted?: (input: {
+    invitationId: string;
+    organizationId: string;
+    userId: string;
+    email: string;
+  }) => Promise<void>;
   onAuthEvent?: (event: {
     action: "auth.sign_up" | "auth.sign_in";
     userId: string;
@@ -95,6 +101,16 @@ export function createAuth(options: CreateAuthOptions) {
         allowUserToCreateOrganization: true,
         cancelPendingInvitationsOnReInvite: true,
         sendInvitationEmail: options.sendInvitationEmail,
+        organizationHooks: {
+          afterAcceptInvitation: async ({ invitation, organization, user }) => {
+            await options.onInvitationAccepted?.({
+              invitationId: invitation.id,
+              organizationId: organization.id,
+              userId: user.id,
+              email: user.email,
+            });
+          },
+        },
       }),
       sso({
         organizationProvisioning: { disabled: false, defaultRole: "member" },
