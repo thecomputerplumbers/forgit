@@ -17,6 +17,7 @@ export type CreateAuthOptions = {
   secret: string;
   baseURL: string;
   trustedOrigins?: string[];
+  google?: { clientId: string; clientSecret: string };
   sendInvitationEmail?: (input: {
     id: string;
     email: string;
@@ -42,6 +43,15 @@ export function createAuth(options: CreateAuthOptions) {
     secret: options.secret,
     baseURL: options.baseURL,
     trustedOrigins: options.trustedOrigins ?? [options.baseURL],
+    socialProviders: options.google
+      ? {
+          google: {
+            clientId: options.google.clientId,
+            clientSecret: options.google.clientSecret,
+            prompt: "select_account",
+          },
+        }
+      : undefined,
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false,

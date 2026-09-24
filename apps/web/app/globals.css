@@ -2126,6 +2126,28 @@ input[type="radio"] {
   color: var(--text-3);
   text-align: center;
 }
+.google-sign-in {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.google-sign-in:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.google-sign-in img {
+  display: block;
+}
+.auth-divider {
+  margin: 16px 0;
+  color: var(--text-3);
+  font-size: 13px;
+  text-align: center;
+}
 .auth-switch {
   margin-top: 18px;
   color: var(--text-3);
