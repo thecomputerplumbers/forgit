@@ -3,6 +3,7 @@ declare namespace Cloudflare {
     DB: D1Database;
     GIT_CONTAINER: DurableObjectNamespace;
     ASSETS: Fetcher;
+    EMAIL: SendEmail;
     APP_URL: string;
     BETTER_AUTH_SECRET?: string;
     GOOGLE_CLIENT_ID?: string;
