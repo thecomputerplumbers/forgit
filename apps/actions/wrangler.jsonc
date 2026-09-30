@@ -37,7 +37,7 @@
     ],
   },
   "ai": { "binding": "AI" },
-  "observability": { "enabled": true },
+  "observability": { "enabled": true, "issues": { "enabled": true } },
   "env": {
     "cloud": {
       "vars": {
