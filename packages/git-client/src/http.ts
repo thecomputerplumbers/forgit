@@ -85,10 +85,28 @@ export class HttpGitClient implements GitClient {
     throw new GitError(await readError(response), response.status);
   }
 
-  async setProtectedBranch(owner: string, name: string, branch: string): Promise<void> {
+  async setBranchProtection(
+    owner: string,
+    name: string,
+    branch: string,
+    admins: string[] | null,
+  ): Promise<void> {
+    // No policy file is walgit's allow-all: anyone with write may push or force push.
+    if (!admins) {
+      const response = await this.send(
+        `/${owner}/${name}/api/policy`,
+        { method: "DELETE" },
+        false,
+        true,
+      );
+      if (response.ok || response.status === 404) return;
+      throw new GitError(await readError(response), response.status);
+    }
+    const groups = [{ name: "merge", members: ["svc:forgit-merge"] }];
+    if (admins.length) groups.push({ name: "admins", members: admins });
     const policy = {
       version: 1,
-      groups: [{ name: "merge", members: ["svc:forgit-merge"] }],
+      groups,
       rules: [
         {
           name: `lock-${branch}`.replace(/[^a-z0-9-]/g, "").slice(0, 63) || "lock-default",
@@ -96,7 +114,7 @@ export class HttpGitClient implements GitClient {
           effect: {
             protect: {
               restricts: ["update", "delete"],
-              bypass: ["group:merge"],
+              bypass: groups.map((group) => `group:${group.name}`),
             },
           },
         },

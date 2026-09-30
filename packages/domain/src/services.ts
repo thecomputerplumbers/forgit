@@ -220,13 +220,13 @@ export function createServices(
       await store.upsertRepoMember({ repositoryId: id, userId: actor.userId, role: "admin" });
       await store.setRules({
         repositoryId: id,
+        protectDefaultBranch: false,
         requiredApprovals: 1,
         requiredChecks: [],
         dismissStaleReviews: true,
       });
       try {
         await git.createRepository(org.slug, repo.name);
-        await git.setProtectedBranch(org.slug, repo.name, repo.defaultBranch);
       } catch (error) {
         const message = error instanceof Error ? error.message : "Git store creation failed";
         try {
@@ -239,6 +239,52 @@ export function createServices(
       }
       await audit(actor, "repo.create", id, `${org.slug}/${repo.name}`, {}, requestId);
       return { repo, owner: org.slug };
+    },
+
+    /** Push the rules' protection to walgit. Call again whenever the repository's admins change. */
+    async syncBranchProtection(owner: string, name: string) {
+      const org = await store.getOrganizationBySlug(owner);
+      const repo = org ? await store.getRepositoryByName(org.id, name) : null;
+      if (!org || !repo) throw new ForgeError("Repository not found", 404, "not_found");
+      const rules = await store.getRules(repo.id);
+      let admins: string[] | null = null;
+      if (rules.protectDefaultBranch) {
+        const [orgMembers, repoMembers] = await Promise.all([
+          store.listOrgMembers(org.id),
+          store.listRepoMembers(repo.id),
+        ]);
+        admins = [
+          ...new Set([
+            ...orgMembers
+              .filter((member) => member.role === "owner" || member.role === "admin")
+              .map((member) => member.login),
+            ...repoMembers
+              .filter((member) => member.role === "admin")
+              .map((member) => member.login),
+          ]),
+        ].sort();
+      }
+      await git.setBranchProtection(org.slug, repo.name, repo.defaultBranch, admins);
+    },
+
+    async updateBranchProtection(
+      actor: Actor,
+      owner: string,
+      name: string,
+      input: { protect: boolean; requiredApprovals: number; requiredChecks: string[] },
+    ) {
+      const { repo, org } = await requireRepo(actor, owner, name, "admin");
+      await store.setRules({
+        repositoryId: repo.id,
+        protectDefaultBranch: input.protect,
+        requiredApprovals: input.requiredApprovals,
+        requiredChecks: input.requiredChecks,
+        dismissStaleReviews: true,
+      });
+      await this.syncBranchProtection(org.slug, repo.name);
+      await audit(actor, "repo.protection", repo.id, repo.defaultBranch, {
+        protect: input.protect,
+      });
     },
 
     async archiveRepository(actor: Actor, owner: string, name: string) {

@@ -23,7 +23,7 @@ type Commit = {
 type Repo = {
   owner: string;
   name: string;
-  protectedBranch: string | null;
+  protectedBranch: { branch: string; bypass: string[] } | null;
   refs: Map<string, string>;
   tags: Map<string, string>;
   commits: Map<string, Commit>;
@@ -130,8 +130,15 @@ export class MemoryGit implements GitClient {
     this.repos.delete(this.key(owner, name));
   }
 
-  async setProtectedBranch(owner: string, name: string, branch: string): Promise<void> {
-    this.require(owner, name).protectedBranch = branch;
+  async setBranchProtection(
+    owner: string,
+    name: string,
+    branch: string,
+    admins: string[] | null,
+  ): Promise<void> {
+    this.require(owner, name).protectedBranch = admins
+      ? { branch, bypass: ["svc:forgit-merge", ...admins] }
+      : null;
   }
 
   async summary(owner: string, name: string) {
@@ -301,7 +308,7 @@ export class MemoryGit implements GitClient {
 
   /**
    * Test helper. Production pushes go through Git Smart HTTP.
-   * The protected branch rejects updates that are not the merge principal.
+   * A protected branch rejects updates from principals outside its bypass list.
    */
   commitFiles(input: {
     owner: string;
@@ -315,7 +322,12 @@ export class MemoryGit implements GitClient {
   }): string {
     const repo = this.require(input.owner, input.repo);
     const exists = repo.refs.has(input.branch);
-    if (exists && repo.protectedBranch === input.branch && input.principal !== "svc:forgit-merge") {
+    const protection = repo.protectedBranch;
+    if (
+      exists &&
+      protection?.branch === input.branch &&
+      !protection.bypass.includes(input.principal ?? "")
+    ) {
       throw new GitError(`rejected by rule 'lock-${input.branch}'`, 403);
     }
     const parentSha =

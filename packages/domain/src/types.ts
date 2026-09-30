@@ -35,6 +35,8 @@ export type RepoMember = {
 
 export type RepoRules = {
   repositoryId: string;
+  /** Off by default, like GitHub. When off, anyone with write may push or force push and merges skip the rules below. */
+  protectDefaultBranch: boolean;
   requiredApprovals: number;
   requiredChecks: string[];
   dismissStaleReviews: boolean;

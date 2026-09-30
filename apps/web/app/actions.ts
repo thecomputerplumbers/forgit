@@ -192,16 +192,14 @@ export async function rulesAction(formData: FormData) {
   const owner = String(formData.get("owner") ?? "");
   const name = String(formData.get("repo") ?? "");
   const { services, actor } = await requireOrganization();
-  const { repo } = await services.requireRepo(actor, owner, name, "admin");
   const checks = String(formData.get("checks") ?? "")
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
-  await services.store.setRules({
-    repositoryId: repo.id,
+  await services.updateBranchProtection(actor, owner, name, {
+    protect: formData.get("protect") === "on",
     requiredApprovals: Number(formData.get("approvals") ?? 1),
     requiredChecks: checks,
-    dismissStaleReviews: true,
   });
   redirect(`/${owner}/${name}/settings`);
 }
@@ -215,6 +213,7 @@ export async function memberAction(formData: FormData) {
   if (!user) redirect(`/${owner}/${name}/settings?error=Unknown%20login`);
   const role = String(formData.get("role") ?? "read") as "read" | "write" | "admin";
   await services.store.upsertRepoMember({ repositoryId: repo.id, userId: user.id, role });
+  await services.syncBranchProtection(owner, name);
   await services.store.insertAudit({
     id: crypto.randomUUID(),
     actorId: actor.userId,

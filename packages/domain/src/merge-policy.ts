@@ -46,8 +46,10 @@ export function evaluateMergePolicy(
     return { name, state };
   });
   const unpassed = required.find((check) => check.state !== "passed");
-  const blocker =
-    approvers.size < rules.requiredApprovals
+  // An unprotected default branch merges like GitHub without branch protection.
+  const blocker = !rules.protectDefaultBranch
+    ? null
+    : approvers.size < rules.requiredApprovals
       ? { message: "Required approvals are missing", code: "reviews" as const }
       : changesRequested
         ? { message: "Changes have been requested", code: "reviews" as const }

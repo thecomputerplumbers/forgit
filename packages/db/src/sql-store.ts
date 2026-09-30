@@ -415,6 +415,7 @@ export function createSqlStore(sql: Sql): ForgeStore {
     async getRules(repositoryId) {
       const rows = await sql.all<{
         repository_id: string;
+        protect_default_branch: number;
         required_approvals: number;
         required_checks: string;
         dismiss_stale_reviews: number;
@@ -423,12 +424,14 @@ export function createSqlStore(sql: Sql): ForgeStore {
       if (!row)
         return {
           repositoryId,
+          protectDefaultBranch: false,
           requiredApprovals: 0,
           requiredChecks: [],
           dismissStaleReviews: true,
         };
       return {
         repositoryId,
+        protectDefaultBranch: row.protect_default_branch === 1,
         requiredApprovals: row.required_approvals,
         requiredChecks: parseJson<string[]>(row.required_checks, []),
         dismissStaleReviews: row.dismiss_stale_reviews === 1,
@@ -437,14 +440,17 @@ export function createSqlStore(sql: Sql): ForgeStore {
 
     async setRules(rules: RepoRules) {
       await sql.run(
-        `INSERT INTO repository_rules (repository_id, required_approvals, required_checks, dismiss_stale_reviews)
-         VALUES (?, ?, ?, ?)
+        `INSERT INTO repository_rules (
+           repository_id, protect_default_branch, required_approvals, required_checks, dismiss_stale_reviews
+         ) VALUES (?, ?, ?, ?, ?)
          ON CONFLICT(repository_id) DO UPDATE SET
+           protect_default_branch = excluded.protect_default_branch,
            required_approvals = excluded.required_approvals,
            required_checks = excluded.required_checks,
            dismiss_stale_reviews = excluded.dismiss_stale_reviews`,
         [
           rules.repositoryId,
+          rules.protectDefaultBranch ? 1 : 0,
           rules.requiredApprovals,
           JSON.stringify(rules.requiredChecks),
           rules.dismissStaleReviews ? 1 : 0,

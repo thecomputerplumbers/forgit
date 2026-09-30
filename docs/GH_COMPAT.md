@@ -72,7 +72,7 @@ forgit:pr:{owner}/{name}/{number}
 
 `POST /mcp` with the same bearer token. Tools: `get_me`, `get_file_contents`, `create_or_update_file`, `list_branches`, `create_branch`, `list_pull_requests`, `pull_request_read`, `create_pull_request`, `update_pull_request`, `merge_pull_request`, `pull_request_review_write`.
 
-`create_or_update_file` pushes as the token's user. It cannot update a protected default branch. That push is rejected by walgit.
+`create_or_update_file` pushes as the token's user. Default branches are unprotected unless an admin turns on branch protection. A protected default branch accepts pushes only from admins and the merge helper; walgit rejects the rest.
 
 ## Proof
 

@@ -16,9 +16,12 @@ export default async function RefsPage({
 }) {
   const { owner, repo: name } = await params;
   const { services, user, organization, repo } = await loadRepoPage(owner, name);
-  const listed = await loadGit(() =>
-    kind === "branches" ? services.git.branches(owner, name) : services.git.tags(owner, name),
-  );
+  const [listed, rules] = await Promise.all([
+    loadGit(() =>
+      kind === "branches" ? services.git.branches(owner, name) : services.git.tags(owner, name),
+    ),
+    services.store.getRules(repo.id),
+  ]);
   const refs = ("value" in listed ? listed.value : []).sort((left, right) =>
     left.name === repo.defaultBranch
       ? -1
@@ -75,7 +78,9 @@ export default async function RefsPage({
                           {branches && ref.name === repo.defaultBranch ? (
                             <>
                               <Badge tone="accent">Default</Badge>
-                              <Badge icon="shield">Protected</Badge>
+                              {rules.protectDefaultBranch ? (
+                                <Badge icon="shield">Protected</Badge>
+                              ) : null}
                             </>
                           ) : null}
                         </div>

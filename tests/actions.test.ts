@@ -39,6 +39,7 @@ async function fixture() {
     "0004_actions.sql",
     "0005_billing.sql",
     "0006_billing_delivery.sql",
+    "0007_branch_protection.sql",
   ])
     db.exec(readFileSync(new URL(`../apps/web/migrations/${file}`, import.meta.url), "utf8"));
   for (const id of ["alice", "bob", "cara"])
@@ -237,6 +238,7 @@ describe("Actions authorization and durable state", () => {
     const policy = evaluateMergePolicy(
       {
         repositoryId: repo.id,
+        protectDefaultBranch: true,
         requiredApprovals: 0,
         requiredChecks: ["actions/ci.yml/push"],
         dismissStaleReviews: true,

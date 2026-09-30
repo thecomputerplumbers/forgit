@@ -28,25 +28,18 @@ describe("repository creation", () => {
     assert.equal(await git.summary("acme", "widget"), null);
   });
 
-  it("removes the git repository when branch protection fails", async () => {
+  it("creates the default branch unprotected, like GitHub", async () => {
     const store = new MemoryStore();
     store.seedUser(
       { id: "alice", name: "Alice", email: "alice@example.com", login: "alice" },
       { id: "org", name: "Acme", slug: "acme", role: "owner" },
     );
     const git = new MemoryGit("https://git.example.com");
-    git.setProtectedBranch = async () => {
-      throw new Error("policy rejected");
-    };
     const services = createServices(store, git, "https://git.example.com");
     const alice = await services.actorFromUser("alice");
-    await assert.rejects(
-      () => services.createRepository(alice, { owner: "acme", name: "widget" }),
-      (error: unknown) =>
-        error instanceof ForgeError && error.status === 503 && error.message === "policy rejected",
-    );
-    assert.equal(await store.getRepositoryByName("org", "widget"), null);
-    assert.equal(await git.summary("acme", "widget"), null);
+    const { repo } = await services.createRepository(alice, { owner: "acme", name: "widget" });
+    assert.equal((await store.getRules(repo.id)).protectDefaultBranch, false);
+    assert.equal(git.repos.get("acme/widget")?.protectedBranch, null);
   });
 
   it("stamps audit events with the request id", async () => {

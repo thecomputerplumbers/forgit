@@ -93,7 +93,16 @@ export type SquashMergeInput = {
 export interface GitClient {
   createRepository(owner: string, name: string): Promise<void>;
   deleteRepository(owner: string, name: string): Promise<void>;
-  setProtectedBranch(owner: string, name: string, branch: string): Promise<void>;
+  /**
+   * Replace the walgit push policy. `null` leaves the branch open to anyone with write.
+   * Otherwise only the merge principal and `admins` may update or delete it.
+   */
+  setBranchProtection(
+    owner: string,
+    name: string,
+    branch: string,
+    admins: string[] | null,
+  ): Promise<void>;
   summary(owner: string, name: string): Promise<GitSummary | null>;
   tree(owner: string, name: string, ref: string, path: string): Promise<GitTree | null>;
   blob(owner: string, name: string, ref: string, path: string): Promise<GitBlob | null>;
