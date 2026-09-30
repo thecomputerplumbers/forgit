@@ -31,6 +31,7 @@ describe("pull requests", () => {
     });
     await store.setRules({
       repositoryId: repo.id,
+      protectDefaultBranch: true,
       requiredApprovals: 1,
       requiredChecks: ["ci"],
       dismissStaleReviews: true,
@@ -186,9 +187,76 @@ describe("pull requests", () => {
     assert.ok(audit.some((event) => event.action === "pull_request.close"));
   });
 
+  it("leaves main open by default like GitHub, so writers push and merge without rules", async () => {
+    const { services, git, store, alice, bob, repo } = await world({ protect: false });
+    assert.equal((await store.getRules(repo.id)).protectDefaultBranch, false);
+    const pushed = git.commitFiles({
+      owner: "acme",
+      repo: "widget",
+      branch: "main",
+      message: "direct",
+      files: { "README.md": "direct\n" },
+    });
+    assert.equal(git.repos.get("acme/widget")?.refs.get("main"), pushed);
+    git.commitFiles({
+      owner: "acme",
+      repo: "widget",
+      branch: "feature",
+      message: "feature",
+      files: { "NOTE.md": "note\n" },
+    });
+    await services.openPullRequest(bob, "acme", "widget", {
+      title: "Unreviewed",
+      sourceRef: "feature",
+      targetRef: "main",
+    });
+    const merged = await services.mergePullRequest(alice, "acme", "widget", 1);
+    assert.equal(merged.pr.state, "merged");
+  });
+
+  it("lets admins and the merge helper past protection, and drops it when turned off", async () => {
+    const { services, git, alice, bob } = await world();
+    const push = (principal?: string) =>
+      git.commitFiles({
+        owner: "acme",
+        repo: "widget",
+        branch: "main",
+        message: `push as ${principal}`,
+        files: { "README.md": `${principal}\n` },
+        principal,
+      });
+    assert.throws(() => push("bob"), /rejected by rule/);
+    assert.ok(push("alice"));
+    assert.ok(push("svc:forgit-merge"));
+    await assert.rejects(
+      () =>
+        services.updateBranchProtection(bob, "acme", "widget", {
+          protect: false,
+          requiredApprovals: 0,
+          requiredChecks: [],
+        }),
+      (error: unknown) => error instanceof ForgeError && error.code === "forbidden",
+    );
+    await services.store.upsertRepoMember({
+      repositoryId: (await services.store.getRepositoryByName("org", "widget"))!.id,
+      userId: "bob",
+      role: "admin",
+    });
+    await services.syncBranchProtection("acme", "widget");
+    assert.ok(push("bob"));
+    await services.updateBranchProtection(alice, "acme", "widget", {
+      protect: false,
+      requiredApprovals: 1,
+      requiredChecks: [],
+    });
+    assert.equal(git.repos.get("acme/widget")?.protectedBranch, null);
+    assert.ok(push(undefined));
+  });
+
   it("reports merge readiness in the order the merge enforces it", () => {
     const rules = {
       repositoryId: "r",
+      protectDefaultBranch: true,
       requiredApprovals: 1,
       requiredChecks: ["ci", "lint"],
       dismissStaleReviews: true,
@@ -261,6 +329,7 @@ async function storeRulesOff(
 ) {
   await services.store.setRules({
     repositoryId,
+    protectDefaultBranch: true,
     requiredApprovals: 1,
     requiredChecks: [],
     dismissStaleReviews: true,

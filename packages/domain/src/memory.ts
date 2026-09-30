@@ -215,6 +215,7 @@ export class MemoryStore implements ForgeStore {
     return (
       this.rules.get(repositoryId) ?? {
         repositoryId,
+        protectDefaultBranch: false,
         requiredApprovals: 0,
         requiredChecks: [],
         dismissStaleReviews: true,

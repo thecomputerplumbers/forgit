@@ -67,7 +67,7 @@ export const MCP_TOOLS: Tool[] = [
   },
   {
     name: "create_or_update_file",
-    description: "Commit a file on a branch. Cannot update a protected default branch.",
+    description: "Commit a file on a branch. Only admins can update a protected default branch.",
     inputSchema: {
       type: "object",
       properties: {

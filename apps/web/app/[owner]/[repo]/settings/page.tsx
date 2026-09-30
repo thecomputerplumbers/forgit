@@ -157,8 +157,10 @@ export default async function SettingsPage({
             <Box
               description={
                 <>
-                  Direct pushes to <code>{repo.defaultBranch}</code> are always rejected. Changes
-                  land through squash-merged pull requests.
+                  Like GitHub, <code>{repo.defaultBranch}</code> is unprotected by default: anyone
+                  with write access can push or force push. When protected, only admins can push or
+                  force push, and everyone else lands changes through pull requests that meet these
+                  rules.
                 </>
               }
               id="protection"
@@ -167,6 +169,14 @@ export default async function SettingsPage({
               {admin ? (
                 <form action={rulesAction} className="form">
                   {hidden}
+                  <label>
+                    <input
+                      defaultChecked={rules.protectDefaultBranch}
+                      name="protect"
+                      type="checkbox"
+                    />
+                    Protect <code>{repo.defaultBranch}</code>
+                  </label>
                   <div className="form-row">
                     <Field
                       hint="Approvals from people other than the author."
@@ -202,6 +212,10 @@ export default async function SettingsPage({
                 </form>
               ) : (
                 <ul className="about-list" style={{ margin: 0 }}>
+                  <li>
+                    <Icon name="shield" />{" "}
+                    {rules.protectDefaultBranch ? "Protected" : "Not protected"}
+                  </li>
                   <li>
                     <Icon name="users" /> {rules.requiredApprovals} required approvals
                   </li>

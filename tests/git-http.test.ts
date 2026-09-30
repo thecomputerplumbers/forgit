@@ -24,7 +24,8 @@ describe("walgit http client", () => {
       fetch: fetchImpl,
     });
     await git.createRepository("acme", "widget");
-    await git.setProtectedBranch("acme", "widget", "main");
+    await git.setBranchProtection("acme", "widget", "main", ["seth"]);
+    await git.setBranchProtection("acme", "widget", "main", null);
     await git.deleteRepository("acme", "widget");
     await git.summary("acme", "widget");
     await git.tree("acme", "widget", "feature/login", "src/app.ts");
@@ -33,6 +34,7 @@ describe("walgit http client", () => {
       [
         ["PUT", "/acme/widget", null],
         ["PUT", "/acme/widget/api/policy", null],
+        ["DELETE", "/acme/widget/api/policy", null],
         ["DELETE", "/acme/widget", null],
         ["GET", "/acme/widget/api", "ada"],
         ["GET", "/acme/widget/api/tree/feature/login/src/app.ts", "ada"],

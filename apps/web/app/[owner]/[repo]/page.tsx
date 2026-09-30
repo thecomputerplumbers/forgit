@@ -26,10 +26,11 @@ export default async function RepositoryPage({
 }) {
   const { owner, repo: name } = await params;
   const { services, user, organization, repo } = await loadRepoPage(owner, name);
-  const [summaryResult, refs, openPulls] = await Promise.all([
+  const [summaryResult, refs, openPulls, rules] = await Promise.all([
     loadGit(() => services.git.summary(owner, name)),
     resolveSlug(services.git, owner, name, [], repo.defaultBranch),
     services.store.listPullRequests(repo.id, "open"),
+    services.store.getRules(repo.id),
   ]);
   const summary = "value" in summaryResult ? summaryResult.value : null;
   const head = summary?.head?.name ?? null;
@@ -53,12 +54,14 @@ export default async function RepositoryPage({
               <Icon name={repo.visibility === "public" ? "globe" : "lock"} />
               {repo.visibility === "public" ? "Public" : "Private"} repository
             </li>
-            <li>
-              <Icon name="shieldCheck" />
-              <span>
-                <code>{repo.defaultBranch}</code> is protected
-              </span>
-            </li>
+            {rules.protectDefaultBranch ? (
+              <li>
+                <Icon name="shieldCheck" />
+                <span>
+                  <code>{repo.defaultBranch}</code> is protected
+                </span>
+              </li>
+            ) : null}
             {summary ? (
               <>
                 <li>

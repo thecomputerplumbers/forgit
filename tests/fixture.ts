@@ -1,7 +1,7 @@
 import { createServices, MemoryStore } from "@forgit/domain";
 import { MemoryGit } from "@forgit/git-client";
 
-export async function world() {
+export async function world({ protect = true } = {}) {
   const store = new MemoryStore();
   store.clock = 1_700_000_000_000;
   const git = new MemoryGit("https://git.example.com");
@@ -22,6 +22,13 @@ export async function world() {
     description: "A widget",
   });
   await store.upsertRepoMember({ repositoryId: created.repo.id, userId: "bob", role: "write" });
+  if (protect) {
+    await services.updateBranchProtection(alice, "acme", "widget", {
+      protect: true,
+      requiredApprovals: 1,
+      requiredChecks: [],
+    });
+  }
   const base = git.commitFiles({
     owner: "acme",
     repo: "widget",
