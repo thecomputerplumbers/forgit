@@ -46,7 +46,7 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.56.0",
-    "@cloudflare/workers-types": "5.20260922.1",
+    "@cloudflare/workers-types": "5.20260930.2",
     "@forgit/typescript-config": "workspace:*",
     "@types/hast": "^3.0.5",
     "@types/react": "^19",
@@ -55,6 +55,6 @@
     "@vitejs/plugin-rsc": "0.5.35",
     "typescript": "^7.0.2",
     "vite": "8.3.0",
-    "wrangler": "4.135.0"
+    "wrangler": "4.145.0"
   }
 }

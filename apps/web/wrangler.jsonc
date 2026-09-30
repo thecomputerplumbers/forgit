@@ -40,7 +40,7 @@
     "bindings": [{ "name": "GIT_CONTAINER", "class_name": "GitContainer" }],
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GitContainer"] }],
-  "observability": { "enabled": true, "head_sampling_rate": 1 },
+  "observability": { "enabled": true, "head_sampling_rate": 1, "issues": { "enabled": true } },
   "upload_source_maps": true,
   "triggers": { "crons": ["* * * * *"] },
   "queues": { "producers": [{ "binding": "ACTIONS_QUEUE", "queue": "forgit-actions" }] },

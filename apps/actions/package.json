@@ -17,10 +17,10 @@
     "zod": "4.6.5"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "5.20260922.1",
+    "@cloudflare/workers-types": "5.20260930.2",
     "@forgit/typescript-config": "workspace:*",
     "@types/node": "^24.13.6",
     "typescript": "^7.0.2",
-    "wrangler": "4.135.0"
+    "wrangler": "4.145.0"
   }
 }
